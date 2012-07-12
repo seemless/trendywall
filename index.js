@@ -19,4 +19,5 @@ app.get("/:id",function (req,res)
 		res.render("index.ejs", { layout: false, lat:lat, lon:lon, zoom:zoom, geohash:req.params["id"]});
 	});
 
-app.listen(9999);
+//process.env.PORT is a cloud9 thing. Use your own port if on a normal platform.
+app.listen(process.env.PORT);
