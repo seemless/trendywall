@@ -18,6 +18,12 @@ app.get("/:id",function (req,res)
                 // now we use the templating capabilities of express and call our template to render the view, and pass a few parameters to it
 		res.render("index.ejs", { layout: false, lat:lat, lon:lon, zoom:zoom, geohash:req.params["id"]});
 	});
+    
+app.get("/earth",function(req,res)
+    {
+        res.render("earth.ejs", { layout: false});
+        
+    });
 
-//process.env.PORT is a cloud9 thing. Use your own port if on a normal platform.
+//process.env.PORT is a cloud9 thing. Use your own port (ex 9999) if on a normal platform.
 app.listen(process.env.PORT);
