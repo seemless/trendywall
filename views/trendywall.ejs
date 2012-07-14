@@ -1,0 +1,54 @@
+<html>
+<head>
+<style>
+    #draggable { width: 150px; height: 150px; padding: 0.5em; }
+    </style>
+<link type="text/css" href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.7/themes/dark-hive/jquery-ui.css" rel="Stylesheet" />    
+<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.4/jquery.min.js"/></script>
+<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.16/jquery-ui.min.js"/></script>
+    <script>
+    $(function() {
+    	$(".dragStar").draggable();
+        $(".resizeStar").resizable();
+	});
+	</script>
+  <script type="text/javascript" src="https://www.google.com/jsapi"> </script>
+  <script type="text/javascript">
+    var ge;
+    google.load("earth", "1");
+
+    function init() {
+      google.earth.createInstance('map3d', initCB, failureCB);
+    }
+
+    function initCB(instance) {
+      ge = instance;
+      ge.getWindow().setVisibility(true);
+    }
+
+    function failureCB(errorCode) {
+    }
+
+    google.setOnLoadCallback(init);
+  </script>
+  <title>Sample</title>
+</head>
+<body>
+DRAGGIN AND RESIZIN <br />
+<div id="map" style="height: 460px; width: 600px;" class="ui-widget-content ui-corner-all dragStar resizeStar">
+    <p>We're no Strangers To Love</p>
+    <div id="map3d" style="height: 400px; width: 600px;"></div>
+</div>
+
+<div id="map1" style="height: 460px; width: 600px;" class="ui-widget-content ui-corner-all dragStar resizeStar">
+    <p>You know the rules</p>
+    <div id="map1Inner" style="height: 400px; width: 600px;"></div>
+</div>
+
+<div id="map2" style="height: 460px; width: 600px;" class="ui-widget-content ui-corner-all dragStar resizeStar">
+    <p>And so do I</p>
+    <div id="map2Inner" style="height: 400px; width: 600px;"></div>
+</div>
+
+</body>
+</html>
