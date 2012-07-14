@@ -12,6 +12,13 @@
         $(".resizeStar").resizable();
         $.getScript("/earth");
 	});
+    var div = document.getElementById("map1Inner");
+    var results = <%twitter_results.results%>;
+    for(i in results){
+     div.append(results[i]);
+     
+    }
+    
 	</script>
   
   <title>Sample</title>

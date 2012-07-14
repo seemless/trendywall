@@ -2,11 +2,10 @@ var express = require("express");
 var app = express.createServer();
 var geohash = require("geohash").GeoHash;
 var twit = require("twit");
+var tconf = require("./conf/twitconf"); //config file for twitter
 
-var twitter = new Twit({
- 
-    
-});
+var twitter = new twit(tconf.getConf())
+
 
 // route routing is very easy with express, this will handle the request for root directory contents.
 // :id is used here to pattern match with the first value after the forward slash.
@@ -57,7 +56,13 @@ app.get("/trendywall",function(req,res)
 //working on dynamic loading of the divs here
 app.get("/trendywall2",function(req,res)
     {
-        res.render("trendywall2.ejs", { layout: false});
+        
+        twitter.get('search', { q: 'cybersecurity', since: '2011-11-11' }, function(err, reply) {
+            console.log(err);
+          res.render("trendywall2.ejs", { layout: false, twitter_results:reply});
+
+        });           
+        
         
     });
 
