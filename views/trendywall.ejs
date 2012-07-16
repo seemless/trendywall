@@ -34,12 +34,12 @@
 
     google.setOnLoadCallback(init);
    
-    var ele = document.getElementById("map3d").inner;
+    var ele = document.getElementById("tweets");
     var results = <%-twitter_results%>;
     
-    ele.append("<ul>");
-    ele.append("<li>hi");
-    ele.append("</ul>");
+    ele.appendChild("<ul>");
+    ele.appendChild("<li>hi</li>");
+    ele.appendChild("</ul>");
    
     console.log(results.results);
     
