@@ -8,8 +8,11 @@
 <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.16/jquery-ui.min.js"/></script>
     <script>
     $(function() {
-    	$(".dragStar").draggable();
+        $(".dragStar").draggable();
         $(".resizeStar").resizable();
+        $("#googleTrends").load("./googleTop10Trends");
+        $("#tweets").load("./tweets");
+                
 	});
 	</script>
   <script type="text/javascript" src="https://www.google.com/jsapi"> </script>
@@ -30,25 +33,33 @@
     }
 
     google.setOnLoadCallback(init);
+   
+    var ele = document.getElementById("map3d").inner;
+    var results = <%-twitter_results%>;
+    
+    ele.append("<ul>");
+    ele.append("<li>hi");
+    ele.append("</ul>");
+   
+    console.log(results.results);
+    
   </script>
+  
   <title>Sample</title>
 </head>
-<body>
-DRAGGIN AND RESIZIN <br />
-<div id="map" style="height: 460px; width: 600px;" class="ui-widget-content ui-corner-all dragStar resizeStar">
-    <p>We're no Strangers To Love</p>
+<body style="margin: 0; padding: 0; background-color: black;">
+<div id="wrapper1" style="width: 25%; float: left; padding: 10px;" class="ui-widget-content ui-corner-all dragStar resizeStar">
+    <div id="googleTrends"></div>
+</div>
+
+<div id="wrapper2" style="float: left; padding: 10px" class="ui-widget-content ui-corner-all dragStar resizeStar">
     <div id="map3d" style="height: 400px; width: 600px;"></div>
 </div>
 
-<div id="map1" style="height: 460px; width: 600px;" class="ui-widget-content ui-corner-all dragStar resizeStar">
-    <p>You know the rules</p>
-    <div id="map1Inner" style="height: 400px; width: 600px;"></div>
+<div id="wrapper3" style="width: 25%; float: left; padding: 10px" class="ui-widget-content ui-corner-all dragStar resizeStar">
+    <div id="tweets"></div>
 </div>
 
-<div id="map2" style="height: 460px; width: 600px;" class="ui-widget-content ui-corner-all dragStar resizeStar">
-    <p>And so do I</p>
-    <div id="map2Inner" style="height: 400px; width: 600px;"></div>
-</div>
 
 </body>
 </html>
