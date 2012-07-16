@@ -12,7 +12,7 @@ var twitter = new twit(tconf.getConf())
 app.get("/maps/:id",function (req,res)
     {
                 //decode the geohash with geohash module
-		var latlon = geohash.decodeGeoHash(req.params["id"]);
+    	var latlon = geohash.decodeGeoHash(req.params["id"]);
 		console.log("latlon : " + latlon);
 		var lat = latlon.latitude[2];
 		console.log("lat : " + lat);
