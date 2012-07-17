@@ -36,7 +36,7 @@ app.get("/googleTop10Trends",function(req,res)
     
 app.get("/tweets/:query",function(req,res)
     {
-            twitter.get('search', { q: req.params["query"], since: '2011-11-11' }, function(err, reply) {
+            twitter.get('search', { q: req.params["query"], result_type: 'mixed' }, function(err, reply) {
           if (err!==null){
                 console.log("Errors:",err);
             }
