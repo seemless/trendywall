@@ -1,0 +1,1 @@
+{"ts":1342491916357,"silentsave":true,"restoring":false,"patch":[[{"diffs":[[1,"trendywall\n==========\n\nMaking a map mashup for the lobby. \n\nTodo:\nTwitter Integration (MCS)\nWordle Integration (GSW)\nGoogle Trends Integration (GSW)\n\nnode libaries currently in use:\n\nejs \nexpress\ngeohash\n"]],"start1":0,"start2":0,"length1":0,"length2":204}]],"length":204}

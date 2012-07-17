@@ -11,8 +11,7 @@
     	$(".dragStar").draggable();
         $(".resizeStar").resizable();
         $("#googleTrends").load("./googleTop10Trends");
-        $("#tweets").load("./tweets");
-                
+        $("#tweets").load("./tweets/darpa");
 	});
 	</script>
   <script type="text/javascript" src="https://www.google.com/jsapi"> </script>
@@ -33,10 +32,15 @@
     }
 
     google.setOnLoadCallback(init);
-    console.log("test");
-    //var ele = document.getElementById("map1Inner);
-    //var results = <%=twitter_results%>;
-    //console.log(results);
+   
+    var ele = document.getElementById("map3d").inner;
+    var results = <%-twitter_results%>;
+    
+    ele.append("<ul>");
+    ele.append("<li>hi");
+    ele.append("</ul>");
+   
+    console.log(results.results);
     
   </script>
   
