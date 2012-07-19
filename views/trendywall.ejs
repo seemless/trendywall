@@ -7,7 +7,6 @@
 <link type="text/css" href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.7/themes/dark-hive/jquery-ui.css" rel="Stylesheet" />    
 <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.4/jquery.min.js"/></script>
 <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.16/jquery-ui.min.js"/></script>
-<script type="text/javascript" src="../js/silky_marquee.js"></script>
     <script>
     $(function() {
         $(".dragStar").draggable();
@@ -15,7 +14,7 @@
         $("#storeNews").load("./googleTopTechNews");
         $("#tweets").load("./tweets/DoD");
         $("#news marquee").load("./news");
-        $("#news").marquee();
+        //$("#news").marquee(); //perhaps later
         //$("#googleTrends").load("./googleTop10Trends"); perhaps later        
                 
         //give the above time to load before populating the left pane, this is a super hack but I dont have time to parse this properly in JS
@@ -29,7 +28,13 @@
              $("#tweets").fadeOut();
              $("#tweets").load("./tweets/DoD");
              $("#tweets").fadeIn();
-            }, 60000)
+            }, 60000);
+
+        setInterval(function() {
+          $("#news marquee").load("./news");
+          //$("#news").marquee();
+          console.log("in update");
+        }, 60000);
 
 
 
