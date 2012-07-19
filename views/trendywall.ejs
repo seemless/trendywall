@@ -1,5 +1,7 @@
+
 <html>
 <head>
+<title>G2 Real-Time Information Wall</title>
 <style>
     #draggable { width: 150px; height: 150px; padding: 0.5em; }
     </style>
@@ -8,10 +10,26 @@
 <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.16/jquery-ui.min.js"/></script>
     <script>
     $(function() {
-    	$(".dragStar").draggable();
+        $(".dragStar").draggable();
         $(".resizeStar").resizable();
-        $("#googleTrends").load("./googleTop10Trends");
-        $("#tweets").load("./tweets/cybersecurity");
+        $("#storeNews").load("./googleTopTechNews");
+        $("#tweets").load("./tweets/DoD");
+        //$("#googleTrends").load("./googleTop10Trends"); perhaps later        
+                
+        //give the above time to load before populating the left pane, this is a super hack but I dont have time to parse this properly in JS
+        setTimeout(function() {
+        $("#s_INTERESTING").clone().appendTo($("#googleTechNews"));
+        $("#s_POPULAR").clone().appendTo($("#googleTechNews"));
+        },1500);
+        
+        //refresh tweeties every 60 seconds  (in the future we'll probably want to do multiple pages per refresh to ensure no duplicare reloads.)
+        setInterval(function() {
+             $("#tweets").fadeOut();
+             $("#tweets").load("./tweets/DoD");
+             $("#tweets").fadeIn();
+            }, 60000)
+
+        
 	});
 	</script>
   <script type="text/javascript" src="https://www.google.com/jsapi"> </script>
@@ -33,23 +51,39 @@
 
     google.setOnLoadCallback(init);
    
+//    var ele = document.getElementById("map3d").inner;
+//    var results = <%-twitter_results%>;
+//    
+//    ele.append("<ul>");
+//    ele.append("<li>hi");
+//    ele.append("</ul>");
+   
+//    console.log(results.results);
+    
   </script>
   
   <title>Sample</title>
 </head>
-<body style="margin: 0; padding: 0; background-color: black;">
+<body style="margin: 0; padding: 0; background-color: black; font-family: Helvetica; font-size: 90%;">
+
+<div id="storeNews" style="visibility:hidden; height:1px; width:1px;"></div>
+
 <div id="wrapper1" style="width: 25%; float: left; padding: 10px;" class="ui-widget-content ui-corner-all dragStar resizeStar">
-    <div id="googleTrends"></div>
+    <div id="googleTechNews"></div>
 </div>
 
-<div id="wrapper2" style="float: left; padding: 10px" class="ui-widget-content ui-corner-all dragStar resizeStar">
+<div id="wrapper2" style="float: left; padding: 10px;" class="ui-widget-content ui-corner-all dragStar resizeStar">
     <div id="map3d" style="height: 400px; width: 600px;"></div>
 </div>
 
-<div id="wrapper3" style="width: 25%; float: left; padding: 10px" class="ui-widget-content ui-corner-all dragStar resizeStar">
+<div id="wrapper3" style="width: 25%; float: left; padding: 10px;" class="ui-widget-content ui-corner-all dragStar resizeStar">
     <div id="tweets"></div>
 </div>
 
+<div id="wrapper4" style="width: 25%; float: left; padding: 10px; visibility:hidden;" class="ui-widget-content ui-corner-all dragStar resizeStar">
+    <div id="googleTrends"></div>
+</div>
 
 </body>
 </html>
+

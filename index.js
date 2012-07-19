@@ -29,21 +29,39 @@ app.get("/googleTop10Trends",function(req,res)
         request('http://www.google.com/trends/hottrends/atom/hourly', function (error, response, body) {
         if (!error && response.statusCode == 200) {
          res.end(body) // Print the google web page.
-      }
-})
+              }
+          })
+    });
+    
+    
+    app.get("/googleTopTechNews",function(req,res)
+    {
+        request('http://news.google.com/news?pz=1&cf=all&ned=us&hl=en&topic=tc&output=html', function (error, response, body) {
+        if (!error && response.statusCode == 200) {
+         res.end(body) // Print the google web page.
+            }
+        })
     });
     
     
 app.get("/tweets/:query",function(req,res)
     {
-            twitter.get('search', { q: req.params["query"], result_type: 'mixed' }, function(err, reply) {
+            twitter.get('search', { q: req.params["query"], result_type: 'recent', lang: 'en', page:1, rpp:8 }, function(err, reply) {
           if (err!==null){
                 console.log("Errors:",err);
             }
             else{
             var tweetToHTML = "";
             for (key in reply.results){
-tweetToHTML += "<div style='border-bottom:1px solid #E2E2E2; padding:6px;'><img src='"+reply.results[key].profile_image_url+"' style='vertical-align:middle;margin:6px;'/>"+reply.results[key].from_user+" - "+reply.results[key].text+"+</div>";
+      
+                
+tweetToHTML += "<div style='border-bottom:1px solid #777; padding-bottom:10px; display:block; position:relative;'>\
+                <a class><img width='48' height='48' src='"+reply.results[key].profile_image_url+"' style='float:left; background: black; border-top: 1px solid #333;\
+                border-left: 1px solid #333; border-bottom: 1px solid #666; border-right: 1px solid #666;'/></a>\
+                <div style='display:block; margin-left:60px;'><p>"+reply.results[key].text+"</p>\
+                <b>"+reply.results[key].from_user+"</b> "+reply.results[key].created_at+"</div>\
+                </div>";
+            
             }
             res.end(tweetToHTML);
             }
