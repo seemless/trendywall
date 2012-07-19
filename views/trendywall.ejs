@@ -7,12 +7,15 @@
 <link type="text/css" href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.7/themes/dark-hive/jquery-ui.css" rel="Stylesheet" />    
 <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.4/jquery.min.js"/></script>
 <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.16/jquery-ui.min.js"/></script>
+<script type="text/javascript" src="../js/silky_marquee.js"></script>
     <script>
     $(function() {
         $(".dragStar").draggable();
         $(".resizeStar").resizable();
         $("#storeNews").load("./googleTopTechNews");
         $("#tweets").load("./tweets/DoD");
+        $("#news marquee").load("./news");
+        $("#news").marquee();
         //$("#googleTrends").load("./googleTop10Trends"); perhaps later        
                 
         //give the above time to load before populating the left pane, this is a super hack but I dont have time to parse this properly in JS
@@ -27,6 +30,8 @@
              $("#tweets").load("./tweets/DoD");
              $("#tweets").fadeIn();
             }, 60000)
+
+
 
         
 	});
@@ -73,6 +78,10 @@
 
 <div id="wrapper4" style="width: 25%; float: left; padding: 10px; visibility:hidden;" class="ui-widget-content ui-corner-all dragStar resizeStar">
     <div id="googleTrends"></div>
+</div>
+<div id="wrapper5" style="width: 25%; float: left; padding: 10px;" class="ui-widget-content ui-corner-all dragStar resizeStar">
+
+    <div id="news"><marquee behavior="scroll" direction="left" scrollamount="4" width="90%"></marquee></div>
 </div>
 
 </body>

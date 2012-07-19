@@ -75,7 +75,24 @@ app.get("/earth",function(req,res)
         res.render("earthDiv.ejs", { layout: false});
         
     });
-    
+app.get("/news", function(req,res)
+    {   
+        twitter.get('search', { q: "BreakingNews", result_type: 'recent', lang: 'en', page:1, rpp:8 }, function(err, reply) {
+            if (err!==null){
+                console.log("Errors:",err);
+            }
+            else{
+                var tweetToHTML = "";
+                for (key in reply.results){
+                    tweetToHTML += "@"+reply.results[key].from_user +": "+reply.results[key].text+"... ";
+                }
+                //tweetToHTML += "</p>";
+                res.end(tweetToHTML);
+            }
+        });
+
+    });    
+
 //just to get drag/resize working
 app.get("/trendywall",function(req,res)
     {
@@ -90,4 +107,4 @@ app.get("/trendywall",function(req,res)
     
 
 //process.env.PORT is a cloud9 thing. Use your own port (ex 9999) if on a normal platform.
-app.listen(process.env.PORT);
+app.listen(3000);
