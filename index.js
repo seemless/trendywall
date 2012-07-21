@@ -46,7 +46,7 @@ app.get("/googleTop10Trends",function(req,res)
     
 app.get("/tweets/:query",function(req,res)
     {
-            twitter.get('search', { q: req.params["query"], result_type: 'recent', lang: 'en', page:1, rpp:8 }, function(err, reply) {
+            twitter.get('search', { q: req.params["query"], result_type: 'mixed', geocode:"39.4,-76.6,10000mi", lang: 'en', page:1, rpp:6 }, function(err, reply) {
           if (err!==null){
                 console.log("Errors:",err);
             }
@@ -59,11 +59,28 @@ tweetToHTML += "<div style='border-bottom:1px solid #777; padding-bottom:10px; d
                 <a class><img width='48' height='48' src='"+reply.results[key].profile_image_url+"' style='float:left; background: black; border-top: 1px solid #333;\
                 border-left: 1px solid #333; border-bottom: 1px solid #666; border-right: 1px solid #666;'/></a>\
                 <div style='display:block; margin-left:60px;'><p>"+reply.results[key].text+"</p>\
-                <b>"+reply.results[key].from_user+"</b> "+reply.results[key].created_at+"</div>\
+                <b>"+reply.results[key].from_user+"</b> - "+reply.results[key].location+"</div>\
                 </div>";
             
             }
             res.end(tweetToHTML);
+            }
+            
+        });           
+    });
+    
+app.get("/geoTweets/:query",function(req,res)
+    {
+            twitter.get('search', { q: req.params["query"], result_type: 'mixed', geocode:"39.4,-76.6,10000mi", lang: 'en', page:1, rpp:8 }, function(err, reply) {
+          if (err!==null){
+                console.log("Errors:",err);
+            }
+            else{
+            res.writeHead(200, {
+                "Content-Type": "application/json",
+                "Access-Control-Allow-Origin": "*"
+                });
+            res.end(JSON.stringify(reply));
             }
             
         });           

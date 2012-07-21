@@ -8,18 +8,30 @@
 <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.4/jquery.min.js"/></script>
 <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.16/jquery-ui.min.js"/></script>
     <script>
+    var geoTweets = {};
+    
     $(function() {
         $(".dragStar").draggable();
         $(".resizeStar").resizable();
         $("#storeNews").load("./googleTopTechNews");
         $("#tweets").load("./tweets/DoD");
+        $("#gohere").load("./twitter-earth");
         //$("#googleTrends").load("./googleTop10Trends"); perhaps later        
                 
+        //lets grab some tweets for use in gearth
+       $.ajax({     
+  url: './geoTweets/cybersecurity',
+  dataType: 'json'
+}).done(function( data ) {
+  geoTweets = data;
+});
+
+        
         //give the above time to load before populating the left pane, this is a super hack but I dont have time to parse this properly in JS
         setTimeout(function() {
         $("#s_INTERESTING").clone().appendTo($("#googleTechNews"));
         $("#s_POPULAR").clone().appendTo($("#googleTechNews"));
-        },1500);
+        },3000);
         
         //refresh tweeties every 60 seconds  (in the future we'll probably want to do multiple pages per refresh to ensure no duplicare reloads.)
         setInterval(function() {
@@ -28,6 +40,17 @@
              $("#tweets").fadeIn();
             }, 60000)
 
+        //refresh google news every 1 hour
+        setInterval(function() {
+            $("#storeNews").load("./googleTopTechNews");
+            $("#googleTechNews").fadeOut();
+            $("#googleTechNews").html('');
+            $("#s_INTERESTING").clone().appendTo($("#googleTechNews"));
+            $("#s_POPULAR").clone().appendTo($("#googleTechNews"));
+            $("#googleTechNews").fadeIn();
+            }, 600000)
+
+
         
 	});
 	</script>
@@ -35,7 +58,7 @@
   <script type="text/javascript">
     var ge;
     google.load("earth", "1");
-
+    
     function init() {
       google.earth.createInstance('map3d', initCB, failureCB);
     }
@@ -43,6 +66,7 @@
     function initCB(instance) {
       ge = instance;
       ge.getWindow().setVisibility(true);
+      newPoint(ge,39.4,-76.6);
     }
 
     function failureCB(errorCode) {
@@ -59,6 +83,48 @@
    
 //    console.log(results.results);
     
+    
+    
+function newPoint(ge,lat,lon){
+    
+// Create the placemark.
+var placemark = ge.createPlacemark('');
+placemark.setName("G2, Inc.");
+
+// Define a custom icon.
+var icon = ge.createIcon('');
+icon.setHref('http://g2-inc.com/sites/all/themes/g2website/images/g2logo.png');
+var style = ge.createStyle('');
+style.getIconStyle().setIcon(icon);
+style.getIconStyle().setScale(3.0);
+placemark.setStyleSelector(style);
+
+// Set the placemark's location.  
+var point = ge.createPoint('');
+point.setLatitude(lat);
+point.setLongitude(lon);
+placemark.setGeometry(point);
+
+// Add the placemark to Earth.
+ge.getFeatures().appendChild(placemark);
+
+// Get the current view.
+var lookAt = ge.getView().copyAsLookAt(ge.ALTITUDE_RELATIVE_TO_GROUND);
+
+// Set new latitude and longitude values.
+lookAt.setLatitude(point.getLatitude());
+lookAt.setLongitude(point.getLongitude());
+
+//zoom speed and range
+ge.getOptions().setFlyToSpeed(.5);
+lookAt.setRange(500000.0)
+
+// Update the view in Google Earth.
+ge.getView().setAbstractView(lookAt);
+
+}
+    
+    
   </script>
   
   <title>Sample</title>
@@ -67,15 +133,15 @@
 
 <div id="storeNews" style="visibility:hidden; height:1px; width:1px;"></div>
 
-<div id="wrapper1" style="width: 25%; float: left; padding: 10px;" class="ui-widget-content ui-corner-all dragStar resizeStar">
+<div id="wrapper1" style="width: 350px; float: left; padding: 10px;" class="ui-widget-content ui-corner-all dragStar resizeStar">
     <div id="googleTechNews"></div>
 </div>
 
 <div id="wrapper2" style="float: left; padding: 10px;" class="ui-widget-content ui-corner-all dragStar resizeStar">
-    <div id="map3d" style="height: 400px; width: 600px;"></div>
+    <div id="map3d" style="height: 600px; width: 760px;"></div>
 </div>
 
-<div id="wrapper3" style="width: 25%; float: left; padding: 10px;" class="ui-widget-content ui-corner-all dragStar resizeStar">
+<div id="wrapper3" style="width: 390px; float: left; padding: 10px;" class="ui-widget-content ui-corner-all dragStar resizeStar">
     <div id="tweets"></div>
 </div>
 
