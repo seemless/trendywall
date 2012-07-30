@@ -12,17 +12,17 @@ var twitter = new twit(tconf.getConf())
 app.get("/maps/:id",function (req,res)
     {
                 //decode the geohash with geohash module
-    	var latlon = geohash.decodeGeoHash(req.params["id"]);
-		console.log("latlon : " + latlon);
-		var lat = latlon.latitude[2];
-		console.log("lat : " + lat);
-	var lon = latlon.longitude[2];
-		console.log("lon : " + lon);
-		zoom = req.params["id"].length + 2;
-		console.log("zoom : " + zoom);
+        var latlon = geohash.decodeGeoHash(req.params["id"]);
+        console.log("latlon : " + latlon);
+        var lat = latlon.latitude[2];
+        console.log("lat : " + lat);
+    var lon = latlon.longitude[2];
+        console.log("lon : " + lon);
+        zoom = req.params["id"].length + 2;
+        console.log("zoom : " + zoom);
                 // now we use the templating capabilities of express and call our template to render the view, and pass a few parameters to it
-		res.render("index.ejs", { layout: false, lat:lat, lon:lon, zoom:zoom, geohash:req.params["id"]});
-	});
+        res.render("index.ejs", { layout: false, lat:lat, lon:lon, zoom:zoom, geohash:req.params["id"]});
+    });
             
 app.get("/googleTop10Trends",function(req,res)
     {
@@ -46,7 +46,7 @@ app.get("/googleTop10Trends",function(req,res)
     
 app.get("/tweets/:query",function(req,res)
     {
-            twitter.get('search', { q: req.params["query"], result_type: 'recent', lang: 'en', page:1, rpp:8 }, function(err, reply) {
+            twitter.get('search', { q: req.params["query"], result_type: 'mixed', geocode:"39.4,-76.6,10000mi", lang: 'en', page:1, rpp:6 }, function(err, reply) {
           if (err!==null){
                 console.log("Errors:",err);
             }
@@ -59,11 +59,28 @@ tweetToHTML += "<div style='border-bottom:1px solid #777; padding-bottom:10px; d
                 <a class><img width='48' height='48' src='"+reply.results[key].profile_image_url+"' style='float:left; background: black; border-top: 1px solid #333;\
                 border-left: 1px solid #333; border-bottom: 1px solid #666; border-right: 1px solid #666;'/></a>\
                 <div style='display:block; margin-left:60px;'><p>"+reply.results[key].text+"</p>\
-                <b>"+reply.results[key].from_user+"</b> "+reply.results[key].created_at+"</div>\
+                <b>"+reply.results[key].from_user+"</b> - "+reply.results[key].location+"</div>\
                 </div>";
             
             }
             res.end(tweetToHTML);
+            }
+            
+        });           
+    });
+    
+app.get("/geoTweets/:query",function(req,res)
+    {
+            twitter.get('search', { q: req.params["query"], result_type: 'mixed', geocode:"39.4,-76.6,10000mi", lang: 'en', page:1, rpp:8 }, function(err, reply) {
+          if (err!==null){
+                console.log("Errors:",err);
+            }
+            else{
+            res.writeHead(200, {
+                "Content-Type": "application/json",
+                "Access-Control-Allow-Origin": "*"
+                });
+            res.end(JSON.stringify(reply));
             }
             
         });           
@@ -75,24 +92,7 @@ app.get("/earth",function(req,res)
         res.render("earthDiv.ejs", { layout: false});
         
     });
-app.get("/news", function(req,res)
-    {   
-        twitter.get('search', { q: "BreakingNews", result_type: 'recent', lang: 'en', page:1, rpp:8 }, function(err, reply) {
-            if (err!==null){
-                console.log("Errors:",err);
-            }
-            else{
-                var tweetToHTML = "";
-                for (key in reply.results){
-                    tweetToHTML += "@"+reply.results[key].from_user +": "+reply.results[key].text+"... ";
-                }
-                //tweetToHTML += "</p>";
-                res.end(tweetToHTML);
-            }
-        });
-
-    });    
-
+    
 //just to get drag/resize working
 app.get("/trendywall",function(req,res)
     {
@@ -107,4 +107,4 @@ app.get("/trendywall",function(req,res)
     
 
 //process.env.PORT is a cloud9 thing. Use your own port (ex 9999) if on a normal platform.
-app.listen(3000);
+app.listen(process.env.PORT);
