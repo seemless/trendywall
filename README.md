@@ -4,12 +4,26 @@ trendywall
 Making a map mashup for the lobby. 
 
 Todo:
-Twitter Integration (MCS)
-Wordle Integration (GSW)
-Google Trends Integration (GSW)
+
+Make Google trends more relevant (news trends?)
+
+Make twitter a streaming div
+
+Make wordle
+
+Make google trends refresh (stream)
+
 
 node libaries currently in use:
 
 ejs 
+
 express
+
 geohash
+
+twit
+
+request
+
+jquery

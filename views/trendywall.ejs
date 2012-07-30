@@ -15,7 +15,12 @@
         $(".resizeStar").resizable();
         $("#storeNews").load("./googleTopTechNews");
         $("#tweets").load("./tweets/DoD");
+<<<<<<< HEAD
         $("#gohere").load("./twitter-earth");
+=======
+        $("#news marquee").load("./news");
+        //$("#news").marquee(); //perhaps later
+>>>>>>> seemless/master
         //$("#googleTrends").load("./googleTop10Trends"); perhaps later        
                 
         //lets grab some tweets for use in gearth
@@ -38,7 +43,15 @@
              $("#tweets").fadeOut();
              $("#tweets").load("./tweets/DoD");
              $("#tweets").fadeIn();
-            }, 60000)
+            }, 60000);
+
+        setInterval(function() {
+          $("#news marquee").load("./news");
+          //$("#news").marquee();
+          console.log("in update");
+        }, 60000);
+
+
 
         //refresh google news every 1 hour
         setInterval(function() {
@@ -74,14 +87,6 @@
 
     google.setOnLoadCallback(init);
    
-//    var ele = document.getElementById("map3d").inner;
-//    var results = <%-twitter_results%>;
-//    
-//    ele.append("<ul>");
-//    ele.append("<li>hi");
-//    ele.append("</ul>");
-   
-//    console.log(results.results);
     
     
     
@@ -148,6 +153,11 @@ ge.getView().setAbstractView(lookAt);
 <div id="wrapper4" style="width: 25%; float: left; padding: 10px; visibility:hidden;" class="ui-widget-content ui-corner-all dragStar resizeStar">
     <div id="googleTrends"></div>
 </div>
+<div id="wrapper5" style="width: 25%; float: left; padding: 10px;" class="ui-widget-content ui-corner-all dragStar resizeStar">
+
+    <div id="news"><marquee behavior="scroll" direction="left" scrollamount="4" width="90%"></marquee></div>
+</div>
 
 </body>
 </html>
+
