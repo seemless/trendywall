@@ -127,7 +127,9 @@ lookAt.setRange(500000.0)
 ge.getView().setAbstractView(lookAt);
 
 //Time to pull in some news
-var href = 'http://192.168.1.8:3000/kml';
+//href will look like 'http://whatever/trendywall' so slice it up;
+var currentHref = window.location.href.slice(0,-10);
+var href = currentHref + "kml"
 
 /*
 google.earth.fetchKml(ge, href, function(kmlObject) {
