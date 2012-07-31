@@ -1,11 +1,44 @@
 <html>
 <head>
-  <title>Sample</title>
+<title>G2 Real-Time Information Wall</title>
+<style>
+    #draggable { width: 150px; height: 150px; padding: 0.5em; }
+    </style>
+<link type="text/css" href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.7/themes/dark-hive/jquery-ui.css" rel="Stylesheet" />    
+<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.4/jquery.min.js"/></script>
+<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.16/jquery-ui.min.js"/></script>
+    <script>
+    var geoTweets = {};
+    
+    $(function() {
+        $(".dragStar").draggable();
+        $(".resizeStar").resizable();
+  
+        //$("#news").marquee(); //perhaps later
+        //$("#googleTrends").load("./googleTop10Trends");   
+                
+        /*
+  //lets grab some tweets for use in gearth... not so fast
+       $.ajax({     
+  url: './geoTweets/Cybersecurity',
+  dataType: 'json'
+}).done(function( data ) {
+  geoTweets = data;
+});
+*/
+
+
+
+
+
+        
+  });
+  </script>
   <script type="text/javascript" src="https://www.google.com/jsapi"> </script>
   <script type="text/javascript">
     var ge;
     google.load("earth", "1");
-
+    
     function init() {
       google.earth.createInstance('map3d', initCB, failureCB);
     }
@@ -13,16 +46,90 @@
     function initCB(instance) {
       ge = instance;
       ge.getWindow().setVisibility(true);
+      newPoint(ge,39.4,-76.6);
     }
 
     function failureCB(errorCode) {
     }
 
     google.setOnLoadCallback(init);
-  </script>
+       
+function newPoint(ge,lat,lon){
+    
+// Create the placemark.
+var placemark = ge.createPlacemark('');
+placemark.setName("G2, Inc.");
 
+// Define a custom icon.
+var icon = ge.createIcon('');
+icon.setHref('http://g2-inc.com/sites/all/themes/g2website/images/g2logo.png');
+var style = ge.createStyle('');
+style.getIconStyle().setIcon(icon);
+style.getIconStyle().setScale(3.0);
+placemark.setStyleSelector(style);
+
+// Set the placemark's location.  
+var point = ge.createPoint('');
+point.setLatitude(lat);
+point.setLongitude(lon);
+placemark.setGeometry(point);
+
+// Add the placemark to Earth.
+ge.getFeatures().appendChild(placemark);
+
+// Get the current view.
+var lookAt = ge.getView().copyAsLookAt(ge.ALTITUDE_RELATIVE_TO_GROUND);
+
+// Set new latitude and longitude values.
+lookAt.setLatitude(point.getLatitude());
+lookAt.setLongitude(point.getLongitude());
+
+//zoom speed and range
+ge.getOptions().setFlyToSpeed(.5);
+lookAt.setRange(500000.0)
+
+// Update the initial view in Google Earth.
+ge.getView().setAbstractView(lookAt);
+
+//Time to pull in some news
+
+var href = 'http://192.168.1.8:3000/kml';
+
+/*
+google.earth.fetchKml(ge, href, function(kmlObject) {
+      if (kmlObject)
+         ge.getFeatures().appendChild(kmlObject);
+         ge.getView().setAbstractView(kmlObject);
+});
+*/
+
+var networkLink = ge.createNetworkLink("");
+networkLink.setDescription("NetworkLink open to fetched content");
+networkLink.setName("Open NetworkLink");
+networkLink.setFlyToView(true);  
+
+// create a Link object
+var link = ge.createLink("");
+link.setHref(href);
+
+// attach the Link to the NetworkLink
+networkLink.setLink(link);
+
+// add the NetworkLink feature to Earth
+ge.getFeatures().appendChild(networkLink);
+
+
+}
+    
+    
+  </script>
 </head>
-<body>
-  <div id="map3d"></div>
+<body style="margin: 0; padding: 0; background-color: black; font-family: Helvetica; font-size: 90%; overflow:hidden;">
+
+
+<div id="top" style="float: left; padding: 10px;" class="ui-widget-content ui-corner-all dragStar">
+    <div id="map3d" style="height: 524px; width: 796px;"></div>
+</div>
+
 </body>
 </html>

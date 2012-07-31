@@ -14,31 +14,46 @@
         $(".dragStar").draggable();
         $(".resizeStar").resizable();
         $("#storeNews").load("./googleTopTechNews");
-        $("#tweets").load("./tweets/DoD");
+        $("#tweets").load("./tweets/Cybersecurity");
         $("#gohere").load("./twitter-earth");
-        //$("#googleTrends").load("./googleTop10Trends"); perhaps later        
+        $("#news marquee").load("./news");
+        //$("#news").marquee(); //perhaps later
+        //$("#googleTrends").load("./googleTop10Trends");   
                 
-        //lets grab some tweets for use in gearth
+        /*
+  //lets grab some tweets for use in gearth... not so fast
        $.ajax({     
-  url: './geoTweets/cybersecurity',
+  url: './geoTweets/Cybersecurity',
   dataType: 'json'
 }).done(function( data ) {
   geoTweets = data;
 });
+*/
 
         
         //give the above time to load before populating the left pane, this is a super hack but I dont have time to parse this properly in JS
         setTimeout(function() {
         $("#s_INTERESTING").clone().appendTo($("#googleTechNews"));
         $("#s_POPULAR").clone().appendTo($("#googleTechNews"));
+  //since we are only pulling google tech news for now, nice for the viewer to know this
+  $(".title").prepend("Technology ")
         },3000);
+  
         
-        //refresh tweeties every 60 seconds  (in the future we'll probably want to do multiple pages per refresh to ensure no duplicare reloads.)
+        //refresh tweeties every 120 seconds  (in the future we'll probably want to do multiple pages per refresh to ensure no duplicare reloads.)
         setInterval(function() {
              $("#tweets").fadeOut();
-             $("#tweets").load("./tweets/DoD");
+             $("#tweets").load("./tweets/Cybersecurity");
              $("#tweets").fadeIn();
-            }, 60000)
+            }, 120000);
+
+        setInterval(function() {
+          $("#news marquee").load("./news");
+          //$("#news").marquee();
+          console.log("in update");
+        }, 120000);
+
+
 
         //refresh google news every 1 hour
         setInterval(function() {
@@ -73,18 +88,7 @@
     }
 
     google.setOnLoadCallback(init);
-   
-//    var ele = document.getElementById("map3d").inner;
-//    var results = <%-twitter_results%>;
-//    
-//    ele.append("<ul>");
-//    ele.append("<li>hi");
-//    ele.append("</ul>");
-   
-//    console.log(results.results);
-    
-    
-    
+       
 function newPoint(ge,lat,lon){
     
 // Create the placemark.
@@ -119,33 +123,69 @@ lookAt.setLongitude(point.getLongitude());
 ge.getOptions().setFlyToSpeed(.5);
 lookAt.setRange(500000.0)
 
-// Update the view in Google Earth.
+// Update the initial view in Google Earth.
 ge.getView().setAbstractView(lookAt);
+
+//Time to pull in some news
+var href = 'http://192.168.1.8:3000/kml';
+
+/*
+google.earth.fetchKml(ge, href, function(kmlObject) {
+      if (kmlObject)
+         ge.getFeatures().appendChild(kmlObject);
+         ge.getView().setAbstractView(kmlObject);
+});
+*/
+
+var networkLink = ge.createNetworkLink("");
+networkLink.setDescription("NetworkLink open to fetched content");
+networkLink.setName("Open NetworkLink");
+networkLink.setFlyToView(true);  
+
+// create a Link object
+var link = ge.createLink("");
+link.setHref(href);
+
+// attach the Link to the NetworkLink
+networkLink.setLink(link);
+
+// add the NetworkLink feature to Earth
+ge.getFeatures().appendChild(networkLink);
+
 
 }
     
     
   </script>
-  
-  <title>Sample</title>
 </head>
-<body style="margin: 0; padding: 0; background-color: black; font-family: Helvetica; font-size: 90%;">
+<body style="margin: 0; padding: 0; background-color: black; font-family: Helvetica; font-size: 90%; overflow:hidden;">
 
 <div id="storeNews" style="visibility:hidden; height:1px; width:1px;"></div>
 
-<div id="wrapper1" style="width: 350px; float: left; padding: 10px;" class="ui-widget-content ui-corner-all dragStar resizeStar">
+<div id="left" style="width: 350px; height:1080px; float: left; padding: 10px;" class="ui-widget-content ui-corner-all dragStar">
     <div id="googleTechNews"></div>
 </div>
 
-<div id="wrapper2" style="float: left; padding: 10px;" class="ui-widget-content ui-corner-all dragStar resizeStar">
-    <div id="map3d" style="height: 600px; width: 760px;"></div>
+<div id="top" style="float: left; padding: 10px;" class="ui-widget-content ui-corner-all dragStar">
+    <div id="map3d" style="height: 524px; width: 796px;"></div>
 </div>
 
-<div id="wrapper3" style="width: 390px; float: left; padding: 10px;" class="ui-widget-content ui-corner-all dragStar resizeStar">
+
+<div id="middle" style="float: left; padding: 10px;" class="ui-widget-content ui-corner-all dragStar">
+    <!--<div id="googleTrends" style="height: 500px; width: 796px;"></div>-->
+<iframe src="http://www.ustream.tv/embed/522594" width="796" height="474" scrolling="no" frameborder="0" style="border: 0px none transparent;"></iframe><br /><a href="http://www.ustream.tv/" style="padding: 2px 0px 4px; width: 400px; background: #ffffff; display: block; color: #000000; font-weight: normal; font-size: 10px; text-decoration: underline; text-align: center;" target="_blank">CBS NEWS Live streaming by Ustream</a></div>
+
+<div id="right" style="width: 390px; float: left; padding: 10px; position:absolute; right:0px" class="ui-widget-content ui-corner-all dragStar">
+    <div class="basic-title" style="padding-left:2px; padding-top:2px;"><span style="color:#222222; font-size:16; font-weight:normal; line-height:18px;">Cybersecurity Tweets</span></div>
     <div id="tweets"></div>
 </div>
 
-<div id="wrapper4" style="width: 25%; float: left; padding: 10px; visibility:hidden;" class="ui-widget-content ui-corner-all dragStar resizeStar">
+<div id="bottom" style="width: 100%; float: left; padding: 10px; height:20px; position:absolute; bottom:-4px" class="ui-widget-content ui-corner-all dragStar resizeStar">
+    <div style="padding-left:2px; padding-top:2px; width:136px; float:left;"><span style="color:#dd3333; font-size:16; font-weight:bold;">#Breaking News</span></div>
+    <div id="news" style="font-size:20; float:right; width:1450px;"><marquee behavior="scroll" direction="left" scrollamount="8" height=10px width="98%"></marquee></div>
+</div>
+
+<div id="hidden" style="width: 25%; float: left; padding: 10px; visibility:hidden;" class="ui-widget-content ui-corner-all dragStar resizeStar">
     <div id="googleTrends"></div>
 </div>
 
