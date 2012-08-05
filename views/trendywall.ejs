@@ -9,6 +9,10 @@
 <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.16/jquery-ui.min.js"/></script>
     <script>
     var geoTweets = {};
+    var twitterEarthTerms = [
+	["internet"],["cybersecurity"],["hackers"],["hacking"],["hacktivism"],["scada"],["internet"],["information security"],["network security"],["sentiment analysis"],
+	["information analysis"],["information visualization"],["security visualization"],["linux"],["java"],["c++"],["network sockets"],["0-day"],["0day"],
+	["defcon"],["blackhat"],["computer virus"],["malware"],["information security professionals"],["military industial complex"]];
     
     $(function() {
         $(".dragStar").draggable();
@@ -20,15 +24,14 @@
         //$("#news").marquee(); //perhaps later
         //$("#googleTrends").load("./googleTop10Trends");   
                 
-        /*
+        
 	//lets grab some tweets for use in gearth... not so fast
        $.ajax({     
-  url: './geoTweets/Cybersecurity',
-  dataType: 'json'
-}).done(function( data ) {
-  geoTweets = data;
-});
-*/
+	 url: './geoTweets/Cybersecurity',
+	 dataType: 'json'
+	}).done(function( data ) {
+	geoTweets = data;
+	});
 
         
         //give the above time to load before populating the left pane, this is a super hack but I dont have time to parse this properly in JS
@@ -53,6 +56,16 @@
           console.log("in update");
         }, 120000);
 
+	
+	//pull in our initial google earth tweet after 4 seconds
+	setTimeout(function() {
+        setNewTweet(twitterEarthTerms[Math.floor(Math.random()*twitterEarthTerms.length)]);
+        }, 4000);
+	
+	//pull in new google earth tweet every 30 seconds (without authenticating we can only do about 1 request every 24 seconds)
+	setInterval(function() {
+        setNewTweet(twitterEarthTerms[Math.floor(Math.random()*twitterEarthTerms.length)]);
+        }, 30000);
 
 
         //refresh google news every 1 hour
@@ -81,7 +94,7 @@
     function initCB(instance) {
       ge = instance;
       ge.getWindow().setVisibility(true);
-      newPoint(ge,39.4,-76.6);
+      newPoint(ge,39.125,-76.788);
     }
 
     function failureCB(errorCode) {
@@ -90,7 +103,7 @@
     google.setOnLoadCallback(init);
        
 function newPoint(ge,lat,lon){
-    
+
 // Create the placemark.
 var placemark = ge.createPlacemark('');
 placemark.setName("G2, Inc.");
@@ -126,16 +139,11 @@ lookAt.setRange(500000.0)
 // Update the initial view in Google Earth.
 ge.getView().setAbstractView(lookAt);
 
-//Time to pull in some news
-var href = 'http://192.168.1.8:3000/kml';
-
-/*
-google.earth.fetchKml(ge, href, function(kmlObject) {
-      if (kmlObject)
-         ge.getFeatures().appendChild(kmlObject);
-         ge.getView().setAbstractView(kmlObject);
-});
-*/
+}
+    
+function setNewTweet(query){
+//Time to pull in some geocoded tweets
+var href = 'http://192.168.1.8:3000/kml/'+query+'';
 
 var networkLink = ge.createNetworkLink("");
 networkLink.setDescription("NetworkLink open to fetched content");
@@ -151,10 +159,10 @@ networkLink.setLink(link);
 
 // add the NetworkLink feature to Earth
 ge.getFeatures().appendChild(networkLink);
-
-
 }
-    
+
+//function I setup to pull the latest tweet mentioning this searchterm
+//setNewTweet("obama");
     
   </script>
 </head>
@@ -185,7 +193,7 @@ ge.getFeatures().appendChild(networkLink);
     <div id="news" style="font-size:20; float:right; width:1450px;"><marquee behavior="scroll" direction="left" scrollamount="8" height=10px width="98%"></marquee></div>
 </div>
 
-<div id="hidden" style="width: 25%; float: left; padding: 10px; visibility:hidden;" class="ui-widget-content ui-corner-all dragStar resizeStar">
+<div id="hidden" style="width: 25%; float: left; padding: 10px; visibility:hidden;">
     <div id="googleTrends"></div>
 </div>
 
