@@ -53,7 +53,7 @@
         setInterval(function() {
           $("#news marquee").load("./news");
           //$("#news").marquee();
-          console.log("in update");
+          
         }, 120000);
 
   
@@ -61,6 +61,16 @@
   setTimeout(function() {
         setNewTweet(twitterEarthTerms[Math.floor(Math.random()*twitterEarthTerms.length)]);
         }, 4000);
+
+  setTimeout(function() {
+    $("#storeNews").load("./googleTopTechNews");
+    $("#googleTechNews").fadeOut();
+    $("#googleTechNews").html('');
+    $("#s_INTERESTING").clone().appendTo($("#googleTechNews"));
+    $("#s_POPULAR").clone().appendTo($("#googleTechNews"));
+    $("#googleTechNews").fadeIn();
+    }, 4000);
+
   
   //pull in new google earth tweet every 30 seconds (without authenticating we can only do about 1 request every 24 seconds)
   setInterval(function() {
@@ -68,15 +78,15 @@
         }, 30000);
 
 
-        //refresh google news every 1 hour
-        setInterval(function() {
-            $("#storeNews").load("./googleTopTechNews");
-            $("#googleTechNews").fadeOut();
-            $("#googleTechNews").html('');
-            $("#s_INTERESTING").clone().appendTo($("#googleTechNews"));
-            $("#s_POPULAR").clone().appendTo($("#googleTechNews"));
-            $("#googleTechNews").fadeIn();
-            }, 600000)
+  //refresh google news every 1 hour
+  setInterval(function() {
+      $("#storeNews").load("./googleTopTechNews");
+      $("#googleTechNews").fadeOut();
+      $("#googleTechNews").html('');
+      $("#s_INTERESTING").clone().appendTo($("#googleTechNews"));
+      $("#s_POPULAR").clone().appendTo($("#googleTechNews"));
+      $("#googleTechNews").fadeIn();
+      }, 600000);
 
 
         
@@ -143,8 +153,10 @@ ge.getView().setAbstractView(lookAt);
     
 function setNewTweet(query){
 //Time to pull in some geocoded tweets
-var href = 'http://192.168.1.8:3000/kml/'+query+'';
-
+var currentHref = window.location.href.slice(0,-10);
+var href = currentHref+"kml/"+query+'';
+//var href = 'http://192.168.1.8:3000/kml/'+query+'';
+console.log(href);
 var networkLink = ge.createNetworkLink("");
 networkLink.setDescription("NetworkLink open to fetched content");
 networkLink.setName("Open NetworkLink");
