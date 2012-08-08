@@ -1,5 +1,5 @@
 var express = require("express");
-var app = express.createServer();
+var app = express();
 var geohash = require("geohash").GeoHash;
 var twit = require("twit");
 var tconf = require("./conf/twitconf"); //config file for twitter
@@ -33,19 +33,29 @@ app.get("/googleTop10Trends",function(req,res)
     });
     
     
-    app.get("/googleTopTechNews",function(req,res)
+app.get("/googleTopTechNews",function(req,res)
     {
         request('http://news.google.com/news?pz=1&cf=all&ned=us&hl=en&topic=tc&output=html', function (error, response, body) {
         if (!error && response.statusCode == 200) {
-         res.end(body) // Print the google web page.
+         res.end(body) // Print the google tech news webpage
             }
         })
     });
-    
+
+app.get("/geocode/:id",function(req,res)
+    {
+        request('https://maps.googleapis.com/maps/api/geocode/json?address='+req.params["id"]+'&sensor=false', function (error, response, body) {
+        res.writeHead(200, {
+                "Content-Type": "application/json",
+                "Access-Control-Allow-Origin": "*"
+                });
+            res.end(body);
+        })
+    });    
     
 app.get("/tweets/:query",function(req,res)
     {
-            twitter.get('search', { q: req.params["query"], result_type: 'mixed', geocode:"39.4,-76.6,10000mi", lang: 'en', page:1, rpp:12 }, function(err, reply) {
+            twitter.get('search', { q: req.params["query"], result_type: 'mixed', geocode:"39.4,-76.6,1000mi", lang: 'en', page:1, rpp:12 }, function(err, reply) {
           if (err!==null){
                 console.log("Errors:",err);
             }
@@ -68,6 +78,8 @@ tweetToHTML += "<div style='border-bottom:1px solid #777; padding-bottom:10px; d
         });           
     });
     
+    
+//if we want to send raw json to the browser, otherwise use /kml to send gearth formatted kml result back
 app.get("/geoTweets/:query",function(req,res)
     {
             twitter.get('search', { q: req.params["query"], result_type: 'mixed', geocode:"39.4,-76.6,10000mi", lang: 'en', page:1, rpp:8 }, function(err, reply) {
@@ -84,53 +96,98 @@ app.get("/geoTweets/:query",function(req,res)
             
         });           
     });
+
+//we'll use this to send the most recent tweet with the mentioned query and return the result as a kml file
+app.get("/kml/:query",function(req,res)
+{       
+    twitter.get('search', { q: req.params["query"], result_type: 'recent', geocode:"39.4,-76.6,10000mi", lang: 'en', page:1, rpp:2 }, function(err, reply) {
+    if (err!==null || reply ==null){
+            console.log("Errors:",err);
+        }
+        else{
+    try{
+            var name = reply.results[0].from_user;
+        var description = reply.results[0].text;
+        var place = reply.results[0].location;
+        var placeNormalized = place; //if google provides a normalized address it will be set here, otherwise its just what the twitter user reported
+        var time = reply.results[0].created_at;
+        var img = reply.results[0].profile_image_url;
+        var lat = "";
+        var lng = "";
+        var coordinates = "";       
+        var resultsJSON = {};
+        
+        //we're checking each location against the google web decoder
+         //https://maps.googleapis.com/maps/api/geocode/json?address=TWITLOCATION&sensor=false
+         if(place != null && place != ''){
+        request('https://maps.googleapis.com/maps/api/geocode/json?address='+place+'&sensor=false', function (error, response, body) {
+            var strjson = ""+body+"";
+            resultsJSON = JSON.parse(strjson);
+            if (resultsJSON.status == 'OK'){
+            lat = resultsJSON.results[0].geometry.location.lat;
+            lng = resultsJSON.results[0].geometry.location.lng;
+            coordinates = lng+","+lat+",0";
+            placeNormalized = resultsJSON.results[0].formatted_address;
+           
+            var kml = '<?xml version="1.0" encoding="UTF-8"?>\
+            <kml xmlns="http://earth.google.com/kml/2.2" xmlns:gx="http://www.google.com/kml/ext/2.2">\
+            <Document>\
+            <Style id="My_Style">\
+            <IconStyle><scale>1.8</scale><Icon><href>'+img+'</href></Icon></IconStyle>\
+            <BalloonStyle>\
+            <bgColor>00eeeeee</bgColor> <textColor>000000</textColor>\
+            <text><![CDATA[ $[name] <HR> $[description]\
+            ]]> </text>\
+            </BalloonStyle>\
+            </Style>\
+            <Placemark>\
+            <name>'+placeNormalized+'</name>\
+            <LookAt>\
+                <longitude>'+lng+'</longitude>\
+                <latitude>'+lat+'</latitude>\
+                <altitude>0</altitude>\
+                <range>6000000</range>\
+            </LookAt>\
+            <description><![CDATA[\
+            <table width="400" height="100"><tr><td><img src="'+img+'"/></td>\
+            <td><span style="font-size:16px;"><b>'+name+'</b>:'+description+'</span></td></tr>\
+            <tr><span style="font-size:12px;">Posted from '+place+' - '+time+'</span></tr>\
+            </table>]]>\
+            </description>\
+            <gx:balloonVisibility>1</gx:balloonVisibility>\
+            <styleUrl>#My_Style</styleUrl>\
+            <Point>\
+                <coordinates>'+coordinates+'</coordinates>\
+            </Point>\
+            </Placemark>\
+            </Document>\
+            </kml>';
+        
+            res.writeHead(200, {
+            "Content-Type": "application/xml",
+            "Access-Control-Allow-Origin": "*"
+            });
+            
+            res.end(kml);
+            }
+        })    
+        }else {
+            res.writeHead(500);
+            res.end(error);
+        }
+      
+    }
+    catch(err){
+        console.log(err);
+    }
+        }
+    });
+});   
     
     
 app.get("/earth",function(req,res)
     {
         res.render("earth.ejs", { layout: false});
-        
-    });
-
-app.get("/kml",function(req,res)
-    {
-        var kml = '<?xml version="1.0" encoding="UTF-8"?>\
-<kml xmlns="http://www.opengis.net/kml/2.2" xmlns:gx="http://www.google.com/kml/ext/2.2" xmlns:kml="http://www.opengis.net/kml/2.2" xmlns:atom="http://www.w3.org/2005/Atom">\
-<Placemark>\
-    <name>Disney World Monorail Crash Kills Employee</name>\
-    <address>Orlando, FL</address>\
-    <Snippet maxLines="0"></Snippet>\
-    <description><![CDATA[<table style="font-size: 11; font-family: Arial, Verdana, Sans" width="244"><tr><td><img src="http://wwwimage.cbsnews.com/common/images/v2/logo_cbsnews_small.gif" border="0"><br/>\
-    <a href="http://www.cbsnews.com/stories/2009/07/05/national/main5134239.shtml">\
-    <img src="http://wwwimage.cbsnews.com/images/2009/07/05/image5134238g.jpg" width="244" height="183" border="0" style="margin-top: 6px;"></a>\
-    <div align="right">Photo: AP</div>\
-    <span style="font-size: 18; font-family: Arial, Verdana, Sans; color: #333;"><b></b></span><br/>\
-    <span style="color: #333;">Walt Disney World says a monorail at the Florida theme park is out of service after an employee death.\
-    <a href="http://www.cbsnews.com/stories/2009/07/05/national/main5134239.shtml" style="font-size: 11; font-family: Arial, Verdana, Sans; color: #039;">Read more...</a></span>\
-    <hr size="1" color="#DDDDDD"/><a href="http://www.cbsnews.com/" style="font-size: 11; font-family: Arial, Verdana, Sans; color: #039;">Get the latest news from CBSNews.com</a><hr size="1" color="#DDDDDD"/></div>\
-    © MMIX The Associated Press. All Rights Reserved. This material may not be published, broadcast, rewritten, or redistributed. \
-    </td></tr></table><font color="#ffffff">]]></description>\
-    <styleUrl>#7328</styleUrl>\
-    <gx:balloonVisibility>1</gx:balloonVisibility>\
-    <MultiGeometry>\
-        <Point>\
-            <coordinates>-81.37923600000001,28.538336,0</coordinates>\
-        </Point>\
-        <LinearRing>\
-            <coordinates>\
-                -81.37923600000001,28.538336,0 -81.37923600000001,28.538336,0 -81.37923600000001,28.538336,0 -81.37923600000001,28.538336,0 -81.37923600000001,28.538336,0 \
-            </coordinates>\
-        </LinearRing>\
-    </MultiGeometry>\
-</Placemark>\
-</kml>'
-
-res.writeHead(200, {
-                "Content-Type": "application/xml",
-                "Access-Control-Allow-Origin": "*"
-                });
-            res.end(kml);
-
         
     });
 
@@ -152,10 +209,9 @@ app.get("/news", function(req,res)
 
     });    
 
-//just to get drag/resize working
 app.get("/trendywall",function(req,res)
     {
-           twitter.get('search', { q: 'cybersecurity', since: '2011-11-11' }, function(err, reply) {
+           twitter.get('search', { q: 'cybersecurity'}, function(err, reply) {
             console.log("Errors:",err);
           res.render("trendywall.ejs", { layout: false, twitter_results:JSON.stringify(reply)});
 

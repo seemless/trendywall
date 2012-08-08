@@ -10,6 +10,8 @@
     <script>
     var geoTweets = {};
     
+    
+    
     $(function() {
         $(".dragStar").draggable();
         $(".resizeStar").resizable();
@@ -17,16 +19,45 @@
         //$("#news").marquee(); //perhaps later
         //$("#googleTrends").load("./googleTop10Trends");   
                 
-        /*
-  //lets grab some tweets for use in gearth... not so fast
+ //lets grab some tweets for use in gearth... not so fast
        $.ajax({     
-  url: './geoTweets/Cybersecurity',
-  dataType: 'json'
-}).done(function( data ) {
+   url: './geoTweets/Cybersecurity',
+   dataType: 'json'
+  }).done(function( data ) {
   geoTweets = data;
-});
-*/
+  });
 
+        
+        var place='';
+    for (key in geoTweets.results){
+      place = geoTweets.results[key].location;
+      
+      //we're checking each location against the google web decoder
+      //https://maps.googleapis.com/maps/api/geocode/json?address=TWITLOCATION&sensor=false
+      alert(place);
+      if(place != null && place != ''){
+      
+      var locodata = {};
+      $.ajax({     
+   url: './geocode/'+place+'',
+   dataType: 'json'
+  }).done(function( data ) {
+  locodata = data;
+                
+  });
+
+    
+    if (locodata.status == 'OK'){
+      alert(geoTweets.results[key].location+locodata.status+locodata.results[0].geometry.location.lat+locodata.results[0].geometry.location.lng);
+    }
+    else{
+      continue; //location of tweet is bad, google say no geocode info, onto the next
+    }
+    
+      }
+      
+    alert("nextone");
+    }
 
 
 
@@ -93,7 +124,7 @@ ge.getView().setAbstractView(lookAt);
 
 //Time to pull in some news
 
-var href = 'http://192.168.1.8:3000/kml';
+var href = 'http://192.168.1.8:3000/kml/cybersecurity';
 
 /*
 google.earth.fetchKml(ge, href, function(kmlObject) {
@@ -128,7 +159,7 @@ ge.getFeatures().appendChild(networkLink);
 
 
 <div id="top" style="float: left; padding: 10px;" class="ui-widget-content ui-corner-all dragStar">
-    <div id="map3d" style="height: 524px; width: 796px;"></div>
+    <div id="map3d" style="height: 724px; width: 996px;"></div>
 </div>
 
 </body>
