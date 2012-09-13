@@ -1,4 +1,3 @@
-var sys = require('sys');
 var express = require("express");
 var app = express();
 var geohash = require("geohash").GeoHash;
@@ -241,8 +240,12 @@ app.get("/flickr/:query/:tagMode", function(req,res)
 	if (mode !== "all" || mode !== "any"){
 		mode = "any";
 	}
-	flickr.executeAPIRequest("flickr.photos.search",{tags:req.params['query'],tag_mode:mode},true, function(err, reply){
+
+	var query = encodeURIComponent(req.params['query'].replace(","," "));
+	console.log(query);
+	flickr.executeAPIRequest("flickr.photos.search",{tags:query,tag_mode:mode},true, function(err, reply){
                 
+		console.log(reply);
 		if(err!==null){
 			console.log("errors in getting flickr photos"+err);
 		}
@@ -251,16 +254,26 @@ app.get("/flickr/:query/:tagMode", function(req,res)
 			var imgTagBeg = "<img src='"
 			var imgTagEndOne = "' class='active' />";
 			var imgTagEngOther = "' />";
-			for(var i=0; i<10; i++){
+			var i = 0;
+			if (reply.photos.total < 10){
+				i = reply.photos.total;
+			}
+			else{
+				i = 10;
+			} 
+			for(var k=0; k<i; k++){
 			//http://farm{farm-id}.staticflickr.com/{server-id}/{id}_{secret}.jpg
-				var p = reply.photos.photo[i];
+				var p = reply.photos.photo[k];
 				var src = "http://farm"+p.farm+".staticflickr.com/"+p.server+"/"+p.id+"_"+p.secret+".jpg";
-				if (i == 1){
+				if (k == 1){
 					picsToHTML += imgTagBeg + src + imgTagEndOne;		
 				}
 				else{
 					picsToHTML += imgTagBeg + src + imgTagEngOther;
 				}
+			}
+			if(!picsToHTML){
+				picsToHTML = "<p>No photos were found matching your query.</p>"
 			}
 			console.log(picsToHTML);
 			res.end(picsToHTML);
