@@ -233,10 +233,15 @@ app.get("/wordle", function(req,res)
 
     });
 
-app.get("/flickr/:query", function(req,res)
+app.get("/flickr/:query/:tagMode", function(req,res)
 	{
-	
-	flickr.executeAPIRequest("flickr.photos.search",{tags:req.params['query']},true, function(err, reply){
+	var mode = req.params['tagMode'];
+	console.log("mode:" + mode);
+	//Only valid tag_modes are 'any' or 'all', default to 'any'
+	if (mode !== "all" || mode !== "any"){
+		mode = "any";
+	}
+	flickr.executeAPIRequest("flickr.photos.search",{tags:req.params['query'],tag_mode:mode},true, function(err, reply){
                 
 		if(err!==null){
 			console.log("errors in getting flickr photos"+err);
@@ -262,6 +267,8 @@ app.get("/flickr/:query", function(req,res)
 		}
 	});
 });
+
+
 
 //process.env.PORT is a cloud9 thing. Use your own port (ex 9999) if on a normal platform.
 app.listen(3000);
