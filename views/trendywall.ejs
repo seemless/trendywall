@@ -3,6 +3,28 @@
 <title>G2 Real-Time Information Wall</title>
 <style>
     #draggable { width: 150px; height: 150px; padding: 0.5em; }
+    #slideshow {
+        position:relative;
+        height:350px;
+    }
+
+    #slideshow IMG {
+        position:absolute;
+        top:0;
+        left:0;
+        z-index:8;
+        opacity:0.0;
+    }
+
+    #slideshow IMG.active {
+        z-index:10;
+        opacity:1.0;
+   }
+
+    #slideshow IMG.last-active {
+        z-index:9;
+    }
+
     </style>
 <link type="text/css" href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.7/themes/dark-hive/jquery-ui.css" rel="Stylesheet" />    
 <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.4/jquery.min.js"/></script>
@@ -14,6 +36,9 @@
   ["information analysis"],["information visualization"],["security visualization"],["linux"],["java"],["c++"],["network sockets"],["0-day"],["0day"],
   ["defcon"],["blackhat"],["computer virus"],["malware"],["information security professionals"],["military industial complex"]];
     
+
+  flickrTerms = "Libya";
+
     $(function() {
         $(".dragStar").draggable();
         $(".resizeStar").resizable();
@@ -21,6 +46,7 @@
         $("#tweets").load("./tweets/Cybersecurity");
         $("#gohere").load("./twitter-earth");
         $("#news marquee").load("./news");
+	$("#slideshow").load("./flickr/"+flickrTerms);
         //$("#news").marquee(); //perhaps later
         //$("#googleTrends").load("./googleTop10Trends");   
                 
@@ -33,7 +59,43 @@
   geoTweets = data;
   });
 
-        
+  flickrPhotos = {};
+  //lets grab some photos
+  $.ajax({
+	url: "./flickr/"+flickrTerms,
+	dataType: 'json',
+  }).done(function( data) {
+	flickrPhotos = data;
+	console.log(flickrPhotos);
+  });
+
+// *************SLIDESHOWS**********************
+    setInterval( function() {
+    var $active = $('#slideshow IMG.active');
+
+    if ( $active.length == 0 ) $active = $('#slideshow IMG:last');
+
+    // use this to pull the images in the order they appear in the markup
+    var $next =  $active.next().length ? $active.next()
+        : $('#slideshow IMG:first');
+
+    // uncomment the 3 lines below to pull the images in random order
+
+    // var $sibs  = $active.siblings();
+    // var rndNum = Math.floor(Math.random() * $sibs.length );
+    // var $next  = $( $sibs[ rndNum ] );
+
+
+    $active.addClass('last-active');
+
+    $next.css({opacity: 0.0})
+        .addClass('active')
+        .animate({opacity: 1.0}, 1000, function() {
+            $active.removeClass('active last-active');
+        });
+}, 3000 );
+
+      
         //give the above time to load before populating the left pane, this is a super hack but I dont have time to parse this properly in JS
         setTimeout(function() {
         $("#s_INTERESTING").clone().appendTo($("#googleTechNews"));
@@ -191,10 +253,8 @@ ge.getFeatures().appendChild(networkLink);
 </div>
 
 
-<div id="middle" style="float: left; padding: 10px;" class="ui-widget-content ui-corner-all dragStar">
-    <!--<div id="googleTrends" style="height: 500px; width: 796px;"></div>-->
-<iframe src="http://www.ustream.tv/embed/522594" width="796" height="474" scrolling="no" frameborder="0" style="border: 0px none transparent;"></iframe><br /><a href="http://www.ustream.tv/" style="padding: 2px 0px 4px; width: 400px; background: #ffffff; display: block; color: #000000; font-weight: normal; font-size: 10px; text-decoration: underline; text-align: center;" target="_blank">CBS NEWS Live streaming by Ustream</a></div>
-
+<div id="slideshow" style="float: left; padding: 10px;" class="ui-widget-content ui-corner-all dragStar">
+</div>
 <div id="right" style="width: 390px; float: left; padding: 10px; position:absolute; right:0px" class="ui-widget-content ui-corner-all dragStar">
     <div class="basic-title" style="padding-left:2px; padding-top:2px;"><span style="color:#222222; font-size:16; font-weight:normal; line-height:18px;">Cybersecurity Tweets</span></div>
     <div id="tweets"></div>
