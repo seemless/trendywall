@@ -38,7 +38,8 @@
     
 
   flickrTerms = "Libya";
-
+  flickrTagMode = "all";
+  flickrUrl = "./flickr/"+flickrTerms+"/"+flickrTagMode;
     $(function() {
         $(".dragStar").draggable();
         $(".resizeStar").resizable();
@@ -46,7 +47,7 @@
         $("#tweets").load("./tweets/Cybersecurity");
         $("#gohere").load("./twitter-earth");
         $("#news marquee").load("./news");
-	$("#slideshow").load("./flickr/"+flickrTerms);
+	$("#slideshow").load(flickrUrl);
         //$("#news").marquee(); //perhaps later
         //$("#googleTrends").load("./googleTop10Trends");   
                 
@@ -59,14 +60,6 @@
   geoTweets = data;
   });
 
-  flickrPhotos = {};
-  //lets grab some photos
-  $.ajax({
-	url: "./flickr/"+flickrTerms,
-	dataType: 'json',
-  }).done(function( data) {
-	flickrPhotos = data;
-  });
 
 // *************SLIDESHOWS**********************
     setInterval( function() {
