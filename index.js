@@ -234,6 +234,9 @@ app.get("/wordle", function(req,res)
 
 app.get("/flickr/:query/:tagMode", function(req,res)
 	{
+	var pixel_map = {"s":"75","q":"150","t":"100","m":"240","n":"320",
+			"-":"500","z":"640","c":"800","b":"1024","o":"500"};
+			
 	var mode = req.params['tagMode'];
 	console.log("mode:" + mode);
 	//Only valid tag_modes are 'any' or 'all', default to 'any'
@@ -245,7 +248,6 @@ app.get("/flickr/:query/:tagMode", function(req,res)
 	console.log(query);
 	flickr.executeAPIRequest("flickr.photos.search",{tags:query,tag_mode:mode},true, function(err, reply){
                 
-		console.log(reply);
 		if(err!==null){
 			console.log("errors in getting flickr photos"+err);
 		}
@@ -264,6 +266,7 @@ app.get("/flickr/:query/:tagMode", function(req,res)
 			for(var k=0; k<i; k++){
 			//http://farm{farm-id}.staticflickr.com/{server-id}/{id}_{secret}.jpg
 				var p = reply.photos.photo[k];
+				var title = p.title;
 				var src = "http://farm"+p.farm+".staticflickr.com/"+p.server+"/"+p.id+"_"+p.secret+".jpg";
 				if (k == 1){
 					picsToHTML += imgTagBeg + src + imgTagEndOne;		
