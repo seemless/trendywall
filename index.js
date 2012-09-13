@@ -1,3 +1,4 @@
+var sys = require('sys');
 var express = require("express");
 var app = express();
 var geohash = require("geohash").GeoHash;
@@ -5,7 +6,11 @@ var twit = require("twit");
 var tconf = require("./conf/twitconf"); //config file for twitter
 var request = require("request"); //for doing http gets.. in this case to get google top 10
 var twitter = new twit(tconf.getConf())
-
+var Flickr = require('flickr').Flickr;
+var fconf = require("./conf/flickrconf");
+var flickrKey = fconf.getConf()['consumer_key'];
+var flickrSecret = fconf.getConf()['consumer_sercret'];
+var flickr= new Flickr(flickrKey, flickrSecret);
 // route routing is very easy with express, this will handle the request for root directory contents.
 // :id is used here to pattern match with the first value after the forward slash.
 app.get("/maps/:id",function (req,res)
@@ -84,7 +89,7 @@ app.get("/geoTweets/:query",function(req,res)
     {
             twitter.get('search', { q: req.params["query"], result_type: 'mixed', geocode:"39.4,-76.6,10000mi", lang: 'en', page:1, rpp:8 }, function(err, reply) {
           if (err!==null){
-                console.log("Errors:",err);
+                console.log("twitter call errors:",err);
             }
             else{
             res.writeHead(200, {
@@ -219,7 +224,44 @@ app.get("/trendywall",function(req,res)
         
         
     });
-    
+app.get("/wordle", function(req,res)
+    {   
+
+        res.render("wordle.ejs", {layout: false});
+
+
+
+    });
+
+app.get("/flickr/:query", function(req,res)
+	{
+	
+	flickr.executeAPIRequest("flickr.photos.search",{tags:req.params['query']},true, function(err, reply){
+                
+		if(err!==null){
+			console.log("errors in getting flickr photos"+err);
+		}
+		else{
+			var picsToHTML = '';
+			var imgTagBeg = "<img src='"
+			var imgTagEndOne = "' class='active' />";
+			var imgTagEngOther = "' />";
+			for(var i=0; i<10; i++){
+			//http://farm{farm-id}.staticflickr.com/{server-id}/{id}_{secret}.jpg
+				var p = reply.photos.photo[i];
+				var src = "http://farm"+p.farm+".staticflickr.com/"+p.server+"/"+p.id+"_"+p.secret+".jpg";
+				if (i == 1){
+					picsToHTML += imgTagBeg + src + imgTagEndOne;		
+				}
+				else{
+					picsToHTML += imgTagBeg + src + imgTagEngOther;
+				}
+			}
+			console.log(picsToHTML);
+			res.end(picsToHTML);
+		}
+	});
+});
 
 //process.env.PORT is a cloud9 thing. Use your own port (ex 9999) if on a normal platform.
 app.listen(3000);
