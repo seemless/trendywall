@@ -64,7 +64,6 @@
 // *************SLIDESHOWS**********************
     setInterval( function() {
     var $active = $('#slideshow IMG.active');
-
     if ( $active.length == 0 ) $active = $('#slideshow IMG:last');
 
     // use this to pull the images in the order they appear in the markup
@@ -85,6 +84,8 @@
         .animate({opacity: 1.0}, 1000, function() {
             $active.removeClass('active last-active');
         });
+   $next.show();
+  $active.hide(); 
 }, 3000 );
 
       
