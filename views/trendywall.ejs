@@ -2,7 +2,7 @@
 <head>
 <title>G2 Real-Time Information Wall</title>
 <style>
-    #draggable { width: 150px; height: 150px; padding: 0.5em; }
+    
     #slideshow {
         position:relative;
         height:350px;
@@ -26,134 +26,28 @@
     }
 
     </style>
-<link type="text/css" href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.7/themes/dark-hive/jquery-ui.css" rel="Stylesheet" />    
-<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.4/jquery.min.js"/></script>
-<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.16/jquery-ui.min.js"/></script>
-    <script>
-    var geoTweets = {};
-    var twitterEarthTerms = [
-  ["internet"],["cybersecurity"],["hackers"],["hacking"],["hacktivism"],["scada"],["internet"],["information security"],["network security"],["sentiment analysis"],
-  ["information analysis"],["information visualization"],["security visualization"],["linux"],["java"],["c++"],["network sockets"],["0-day"],["0day"],
-  ["defcon"],["blackhat"],["computer virus"],["malware"],["information security professionals"],["military industial complex"]];
-    
-  //flickrTerms can be a comma separated list
-  flickrTerms = "Libya";
-  flickrTagMode = "all";
-  flickrUrl = "./flickr/"+flickrTerms+"/"+flickrTagMode;
-    $(function() {
-        $(".dragStar").draggable();
-        $(".resizeStar").resizable();
-        $("#storeNews").load("./googleTopTechNews");
-        $("#tweets").load("./tweets/Cybersecurity");
-        $("#gohere").load("./twitter-earth");
-        $("#news marquee").load("./news");
-	$("#slideshow").load(flickrUrl);
-        //$("#news").marquee(); //perhaps later
-        //$("#googleTrends").load("./googleTop10Trends");   
-                
-        
-  //lets grab some tweets for use in gearth... not so fast
-       $.ajax({     
-   url: './geoTweets/Cybersecurity',
-   dataType: 'json'
-  }).done(function( data ) {
-  geoTweets = data;
-  });
-
-
-// *************SLIDESHOWS**********************
-    setInterval( function() {
-    var $active = $('#slideshow IMG.active');
-    if ( $active.length == 0 ) $active = $('#slideshow IMG:last');
-
-    // use this to pull the images in the order they appear in the markup
-    var $next =  $active.next().length ? $active.next()
-        : $('#slideshow IMG:first');
-
-    // uncomment the 3 lines below to pull the images in random order
-
-    // var $sibs  = $active.siblings();
-    // var rndNum = Math.floor(Math.random() * $sibs.length );
-    // var $next  = $( $sibs[ rndNum ] );
-
-
-    $active.addClass('last-active');
-
-    $next.css({opacity: 0.0})
-        .addClass('active')
-        .animate({opacity: 1.0}, 1000, function() {
-            $active.removeClass('active last-active');
-        });
-   $next.show();
-  $active.hide(); 
-}, 5000 );
-
-      
-        //give the above time to load before populating the left pane, this is a super hack but I dont have time to parse this properly in JS
-        setTimeout(function() {
-        $("#s_INTERESTING").clone().appendTo($("#googleTechNews"));
-        $("#s_POPULAR").clone().appendTo($("#googleTechNews"));
-  //since we are only pulling google tech news for now, nice for the viewer to know this
-  $(".title").prepend("Technology ")
-        },3000);
+<link type="text/css" href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.1/themes/dark-hive/jquery-ui.css" rel="Stylesheet" />
+<style>
+    body { font-size: 62.5%; }
+    label, input { display:block; }
+    input.text { margin-bottom:12px; width:95%; padding: .4em; }
+    fieldset { padding:0; border:0; margin-top:25px; }
+    h1 { font-size: 1.2em; margin: .6em 0; }
+    .ui-dialog .ui-state-error { padding: .3em; }
+    .validateTips { border: 1px solid transparent; padding: 0.3em; }
+</style>
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.1/jquery.min.js"></script>
+<script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.8.23/jquery-ui.min.js"></script>
+<script type="text/javascript" src="https://www.google.com/jsapi"></script>
   
-        
-        //refresh tweeties every 120 seconds  (in the future we'll probably want to do multiple pages per refresh to ensure no duplicare reloads.)
-        setInterval(function() {
-             $("#tweets").fadeOut();
-             $("#tweets").load("./tweets/Cybersecurity");
-             $("#tweets").fadeIn();
-            }, 120000);
-
-        setInterval(function() {
-          $("#news marquee").load("./news");
-          //$("#news").marquee();
-          
-        }, 120000);
-
-  
-  //pull in our initial google earth tweet after 4 seconds
-  setTimeout(function() {
-        setNewTweet(twitterEarthTerms[Math.floor(Math.random()*twitterEarthTerms.length)]);
-        }, 4000);
-
-  setTimeout(function() {
-    $("#storeNews").load("./googleTopTechNews");
-    $("#googleTechNews").fadeOut();
-    $("#googleTechNews").html('');
-    $("#s_INTERESTING").clone().appendTo($("#googleTechNews"));
-    $("#s_POPULAR").clone().appendTo($("#googleTechNews"));
-    $("#googleTechNews").fadeIn();
-    }, 4000);
-
-  
-  //pull in new google earth tweet every 30 seconds (without authenticating we can only do about 1 request every 24 seconds)
-  setInterval(function() {
-        setNewTweet(twitterEarthTerms[Math.floor(Math.random()*twitterEarthTerms.length)]);
-        }, 30000);
-
-
-  //refresh google news every 1 hour
-  setInterval(function() {
-      $("#storeNews").load("./googleTopTechNews");
-      $("#googleTechNews").fadeOut();
-      $("#googleTechNews").html('');
-      $("#s_INTERESTING").clone().appendTo($("#googleTechNews"));
-      $("#s_POPULAR").clone().appendTo($("#googleTechNews"));
-      $("#googleTechNews").fadeIn();
-      }, 600000);
-
-
-        
-  });
-  </script>
-  <script type="text/javascript" src="https://www.google.com/jsapi"> </script>
-  <script type="text/javascript">
-    var ge;
+ <script>
+   
+       
     google.load("earth", "1");
+    var ge = null; 
     
     function init() {
-      google.earth.createInstance('map3d', initCB, failureCB);
+  google.earth.createInstance('map3d', initCB, failureCB);
     }
 
     function initCB(instance) {
@@ -164,8 +58,84 @@
 
     function failureCB(errorCode) {
     }
+    
+    var searchTerms = ["Libya"];
+    var geoTweets = {};
+    
+    
+    //Everything in this functions runs immediately on load
+    $(function() {
 
-    google.setOnLoadCallback(init);
+    
+    
+    var searchTerms = $( "#searchTerms" ),
+      allFields = $( [] ).add( searchTerms )
+      tips = $( ".validateTips" );
+
+    function updateTips( t ) {
+      tips
+        .text( t )
+        .addClass( "ui-state-highlight" );
+      setTimeout(function() {
+        tips.removeClass( "ui-state-highlight", 1500 );
+      }, 500 );
+    }
+
+    function checkLength( o, n, min, max ) {
+      if ( o.val().length > max || o.val().length < min ) {
+        o.addClass( "ui-state-error" );
+        updateTips( "Length of " + n + " must be between " +
+          min + " and " + max + "." );
+        return false;
+      } else {
+        return true;
+      }
+    }
+
+    function checkRegexp( o, regexp, n ) {
+      if ( !( regexp.test( o.val() ) ) ) {
+        o.addClass( "ui-state-error" );
+        updateTips( n );
+        return false;
+      } else {
+        return true;
+      }
+    }
+
+    $( "#dialog-form" ).dialog({
+      autoOpen: false,
+      show: "fade",
+      hide: "fade",
+      height: 300,
+      width: 500,
+      modal: true,
+      buttons: {
+        "Submit": function() {
+
+          var bValid = true;
+          allFields.removeClass( "ui-state-error" );
+
+          bValid = bValid && checkLength( searchTerms, "searchTerms", 2, 160 );
+
+          bValid = bValid && checkRegexp( searchTerms, /^[a-z]([0-9a-z_])+$/i, "searchTerms may consist of a-z, 0-9, underscores, begin with a letter." );
+
+          if ( bValid ) {
+            searchTerms = [$("#searchTerms").val()];
+             $( this ).dialog( "close" );         
+            loadPage(searchTerms);
+            init();
+          }
+        },
+      },
+      close: function() {
+        allFields.val( "" ).removeClass( "ui-state-error" );
+      }
+    });
+        
+  $( "#dialog-form" ).dialog( "open" );
+});
+       
+
        
 function newPoint(ge,lat,lon){
 
@@ -206,12 +176,23 @@ ge.getView().setAbstractView(lookAt);
 
 }
     
+    /*
+    var searchTerms = [
+  ["internet"],["cybersecurity"],["hackers"],["hacking"],["hacktivism"],["scada"],["internet"],["information security"],["network security"],["sentiment analysis"],
+  ["information analysis"],["information visualization"],["security visualization"],["linux"],["java"],["c++"],["network sockets"],["0-day"],["0day"],
+  ["defcon"],["blackhat"],["computer virus"],["malware"],["information security professionals"],["military industial complex"]];
+    */
+
+
+
 function setNewTweet(query){
 //Time to pull in some geocoded tweets
 var currentHref = window.location.href.slice(0,-10);
 var href = currentHref+"kml/"+query+'';
 //var href = 'http://192.168.1.8:3000/kml/'+query+'';
 console.log(href);
+
+
 var networkLink = ge.createNetworkLink("");
 networkLink.setDescription("NetworkLink open to fetched content");
 networkLink.setName("Open NetworkLink");
@@ -227,29 +208,131 @@ networkLink.setLink(link);
 // add the NetworkLink feature to Earth
 ge.getFeatures().appendChild(networkLink);
 }
-
-//function I setup to pull the latest tweet mentioning this searchterm
-//setNewTweet("obama");
+ 
     
-  </script>
+function loadPage(searchTerms){
+    //flickrTerms can be a comma separated list
+  flickrTerms = searchTerms;
+  flickrTagMode = "all";
+  flickrUrl = "./flickr/"+flickrTerms+"/"+flickrTagMode;
+
+
+         $(".dragStar").draggable();
+        $(".resizeStar").resizable();
+        $("#storeNews").load("./googleTopWorldNews");
+        $("#tweets").load("./tweets/"+searchTerms+"");
+        $("#gohere").load("./twitter-earth");
+        $("#news marquee").load("./news");
+  $("#slideshow").load(flickrUrl);
+
+          google.setOnLoadCallback(init);
+  //lets grab some tweets for use in gearth... not so fast
+       $.ajax({     
+   url: './geoTweets/'+searchTerms+'',
+   dataType: 'json'
+  }).done(function( data ) {
+  geoTweets = data;
+  });
+
+  $("#tweetTitle").html("Live "+searchTerms+" Tweets");
+  $("#imagesTitle").html(searchTerms+" Images");
+  
+// *************SLIDESHOWS**********************
+    setInterval( function() {
+    var $active = $('#slideshow IMG.active');
+
+    if ( $active.length == 0 ) $active = $('#slideshow IMG:last');
+
+    // use this to pull the images in the order they appear in the markup
+    var $next =  $active.next().length ? $active.next()
+        : $('#slideshow IMG:first');
+
+    // uncomment the 3 lines below to pull the images in random order
+
+    // var $sibs  = $active.siblings();
+    // var rndNum = Math.floor(Math.random() * $sibs.length );
+    // var $next  = $( $sibs[ rndNum ] );
+
+
+    $active.addClass('last-active');
+
+    $next.css({opacity: 0.0})
+        .addClass('active')
+        .animate({opacity: 1.0}, 1000, function() {
+            $active.removeClass('active last-active');
+        });
+}, 10000 );
+
+      
+        
+        //refresh tweeties every 120 seconds  (in the future we'll probably want to do multiple pages per refresh to ensure no duplicare reloads.)
+        setInterval(function() {
+             $("#tweets").fadeOut();
+             $("#tweets").load("./tweets/"+searchTerms+"");
+             $("#tweets").fadeIn();
+            }, 120000);
+
+        setInterval(function() {
+          $("#news marquee").load("./news");
+          //$("#news").marquee();
+          
+        }, 120000);
+
+  
+  //pull in our initial google earth tweet after 4 seconds
+  setTimeout(function() {
+        setNewTweet(searchTerms);
+        }, 4000);
+
+  setTimeout(function() {
+    $("#storeNews").load("./googleTopWorldNews");
+    $("#googleNews").fadeOut();
+    $("#googleNews").html('');
+    $("#s_INTERESTING").clone().appendTo($("#googleNews"));
+    $("#s_POPULAR").clone().appendTo($("#googleNews"));
+    $(".small-story").css('padding','12px');
+    $("#googleNews").fadeIn();
+    }, 4000);
+
+  
+  //pull in new google earth tweet every 30 seconds (without authenticating we can only do about 1 request every 24 seconds)
+  setInterval(function() {
+        setNewTweet(searchTerms[0]);
+        }, 25000);
+
+
+  //refresh google news every 1 hour
+  setInterval(function() {
+      $("#storeNews").load("./googleTopWorldNews");
+      $("#googleNews").fadeOut();
+      $("#googleNews").html('');
+      $("#s_INTERESTING").clone().appendTo($("#googleNews"));
+      $("#s_POPULAR").clone().appendTo($("#googleNews"));
+      $("#googleNews").fadeIn();
+      }, 600000);
+  }
+
+  
+</script>
+
 </head>
 <body style="margin: 0; padding: 0; background-color: black; font-family: Helvetica; font-size: 90%; overflow:hidden;">
 
-<div id="storeNews" style="visibility:hidden; height:1px; width:1px;"></div>
-
 <div id="left" style="width: 350px; height:1080px; float: left; padding: 10px;" class="ui-widget-content ui-corner-all dragStar">
-    <div id="googleTechNews"></div>
+    <div id="googleNews"></div>
 </div>
 
 <div id="top" style="float: left; padding: 10px;" class="ui-widget-content ui-corner-all dragStar">
     <div id="map3d" style="height: 524px; width: 796px;"></div>
 </div>
 
-
-<div id="slideshow" style="float: left; padding: 10px;" class="ui-widget-content ui-corner-all dragStar">
+<div id="middle" style="float: left; padding: 10px;" class="ui-widget-content ui-corner-all dragStar">
+     <div class="basic-title" style="padding-left:2px; padding-top:2px;"><span id="imagesTitle" style="color:#222222; font-size:16; font-weight:normal; line-height:18px;">Images</span></div>
+<div id="slideshow" style="height: 524px; width: 796px;"></div>
 </div>
-<div id="right" style="width: 390px; float: left; padding: 10px; position:absolute; right:0px" class="ui-widget-content ui-corner-all dragStar">
-    <div class="basic-title" style="padding-left:2px; padding-top:2px;"><span style="color:#222222; font-size:16; font-weight:normal; line-height:18px;">Cybersecurity Tweets</span></div>
+
+<div id="right" style="width: 390px; height:1080px; float: left; padding: 10px; position:absolute; right:0px" class="ui-widget-content ui-corner-all dragStar">
+    <div class="basic-title" style="padding-left:2px; padding-top:2px;"><span id="tweetTitle" style="color:#222222; font-size:16; font-weight:normal; line-height:18px;">Tweets</span></div>
     <div id="tweets"></div>
 </div>
 
@@ -258,9 +341,23 @@ ge.getFeatures().appendChild(networkLink);
     <div id="news" style="font-size:20; float:right; width:1450px;"><marquee behavior="scroll" direction="left" scrollamount="8" height=10px width="98%"></marquee></div>
 </div>
 
+<div id="storeNews" style="visibility:hidden; height:1px; width:1px;"></div>
+
 <div id="hidden" style="width: 25%; float: left; padding: 10px; visibility:hidden;">
     <div id="googleTrends"></div>
 </div>
+
+<div id="dialog-form" title="Areas of Interest">
+  <p class="validateTips"><!--Use commas between multiple interests--></p>
+
+  <form>
+  <fieldset>
+    <label for="searchTerms">Enter Interest</label>
+    <input type="text" name="searchTerms" id="searchTerms" class="text ui-widget-content ui-corner-all" />
+  </fieldset>
+  </form>
+</div>
+
 
 </body>
 </html>
