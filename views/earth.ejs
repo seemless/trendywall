@@ -21,11 +21,11 @@
                 
  //lets grab some tweets for use in gearth... not so fast
        $.ajax({     
-	 url: './geoTweets/Cybersecurity',
-	 dataType: 'json'
-	}).done(function( data ) {
-	geoTweets = data;
-	});
+   url: './geoTweets/Cybersecurity',
+   dataType: 'json'
+  }).done(function( data ) {
+  geoTweets = data;
+  });
 
         
         var place='';
@@ -39,12 +39,12 @@
       
       var locodata = {};
       $.ajax({     
-	 url: './geocode/'+place+'',
-	 dataType: 'json'
-	}).done(function( data ) {
-	locodata = data;
+   url: './geocode/'+place+'',
+   dataType: 'json'
+  }).done(function( data ) {
+  locodata = data;
                 
-	});
+  });
 
     
     if (locodata.status == 'OK'){
@@ -63,8 +63,8 @@
 
 
         
-	});
-	</script>
+  });
+  </script>
   <script type="text/javascript" src="https://www.google.com/jsapi"> </script>
   <script type="text/javascript">
     var ge;
@@ -164,4 +164,3 @@ ge.getFeatures().appendChild(networkLink);
 
 </body>
 </html>
-
