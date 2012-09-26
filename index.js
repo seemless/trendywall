@@ -218,14 +218,9 @@ app.get("/news", function(req,res)
 
 app.get("/trendywall",function(req,res)
     {
-           twitter.get('search', { q: 'cybersecurity'}, function(err, reply) {
-            console.log("Errors:",err);
-          res.render("trendywall.ejs", { layout: false, twitter_results:JSON.stringify(reply)});
-
-        });           
-        
-        
+          res.render("trendywall.ejs", { layout: false });
     });
+
 app.get("/wordle", function(req,res)
     {   
         res.render("wordle.ejs", {layout: false});
