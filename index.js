@@ -44,17 +44,6 @@ app.get("/googleTopTechNews",function(req,res)
         })
     });
 
-app.get("/geocode/:id",function(req,res)
-    {
-        request('https://maps.googleapis.com/maps/api/geocode/json?address='+req.params["id"]+'&sensor=false', function (error, response, body) {
-        res.writeHead(200, {
-                "Content-Type": "application/json",
-                "Access-Control-Allow-Origin": "*"
-                });
-            res.end(body);
-        })
-    });    
-    
 app.get("/tweets/:query",function(req,res)
     {
             twitter.get('search', { q: req.params["query"], result_type: 'mixed', geocode:"39.4,-76.6,1000mi", lang: 'en', page:1, rpp:12 }, function(err, reply) {
