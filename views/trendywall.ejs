@@ -42,9 +42,9 @@
   
  <script>
    
-       
-    google.load("earth", "1");
-    var ge = null; 
+    var ge;
+    google.load("earth", "1.008");
+var networkLink;    
     
     function init() {
   google.earth.createInstance('map3d', initCB, failureCB);
@@ -59,7 +59,6 @@
     function failureCB(errorCode) {
     }
     
-    var searchTerms = ["Libya"];
     var geoTweets = {};
     
     
@@ -120,7 +119,7 @@
           bValid = bValid && checkRegexp( searchTerms, /^[a-z]([0-9a-z_])+$/i, "searchTerms may consist of a-z, 0-9, underscores, begin with a letter." );
 
           if ( bValid ) {
-            searchTerms = [$("#searchTerms").val()];
+            searchTerms = $("#searchTerms").val();
              $( this ).dialog( "close" );         
             loadPage(searchTerms);
             init();
@@ -187,13 +186,13 @@ ge.getView().setAbstractView(lookAt);
 
 function setNewTweet(query){
 //Time to pull in some geocoded tweets
-var currentHref = window.location.href.slice(0,-10);
-var href = currentHref+"kml/"+query+'';
-//var href = 'http://192.168.1.8:3000/kml/'+query+'';
+//var currentHref = window.location.href.slice(0,-18);
+//var href = currentHref+"/kml/"+query+'';
+var href = 'http://50.116.22.120:3000/kml/'+query+'';
 console.log(href);
 
 
-var networkLink = ge.createNetworkLink("");
+networkLink = ge.createNetworkLink("");
 networkLink.setDescription("NetworkLink open to fetched content");
 networkLink.setName("Open NetworkLink");
 networkLink.setFlyToView(true);  
@@ -223,9 +222,12 @@ function loadPage(searchTerms){
         $("#tweets").load("./tweets/"+searchTerms+"");
         $("#gohere").load("./twitter-earth");
         $("#news marquee").load("./news");
-  $("#slideshow").load(flickrUrl);
+
+
+	$("#slideshow").load(flickrUrl);
 
           google.setOnLoadCallback(init);
+/*
   //lets grab some tweets for use in gearth... not so fast
        $.ajax({     
    url: './geoTweets/'+searchTerms+'',
@@ -233,6 +235,8 @@ function loadPage(searchTerms){
   }).done(function( data ) {
   geoTweets = data;
   });
+*/
+
 
   $("#tweetTitle").html("Live "+searchTerms+" Tweets");
   $("#imagesTitle").html(searchTerms+" Images");
@@ -282,9 +286,9 @@ function loadPage(searchTerms){
 
   
   //pull in our initial google earth tweet after 4 seconds
-  setTimeout(function() {
-        setNewTweet(searchTerms);
-        }, 4000);
+//  setTimeout(function() {
+  //      setNewTweet(searchTerms);
+    //    }, 4000);
 
   setTimeout(function() {
     $("#storeNews").load("./googleTopWorldNews");
@@ -298,9 +302,9 @@ function loadPage(searchTerms){
 
   
   //pull in new google earth tweet every 30 seconds (without authenticating we can only do about 1 request every 24 seconds)
-  setInterval(function() {
-        setNewTweet(searchTerms[0]);
-        }, 25000);
+  setInterval( function(){
+        setNewTweet(searchTerms)
+       } , 10000);
 
 
   //refresh google news every 1 hour
@@ -338,7 +342,7 @@ function loadPage(searchTerms){
     <div id="tweets"></div>
 </div>
 
-<div id="bottom" style="width: 100%; float: left; padding: 10px; height:20px; position:absolute; bottom:-4px" class="ui-widget-content ui-corner-all dragStar resizeStar">
+<div id="bottom" style="z-index:50; width: 100%; float: left; padding: 10px; height:20px; position:absolute; bottom:-4px" class="ui-widget-content ui-corner-all dragStar resizeStar">
     <div style="padding-left:2px; padding-top:2px; width:136px; float:left;"><span style="color:#dd3333; font-size:16; font-weight:bold;">#Breaking News</span></div>
     <div id="news" style="font-size:20; float:right; width:1450px;"><marquee behavior="scroll" direction="left" scrollamount="8" height=10px width="98%"></marquee></div>
 </div>
