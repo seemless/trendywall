@@ -102,9 +102,9 @@ app.get("/geoTweets/:query",function(req,res)
 //we'll use this to send the most recent tweet with the mentioned query and return the result as a kml file
 app.get("/kml/:query",function(req,res)
 {
-    var randomTweetNumber = Math.floor(Math.random()*100);
+    var randomTweetNumber = Math.floor(Math.random()*80);
     //var randomTweetPage = Math.floor(Math.random()*8);
-    twitter.get('search', { q: req.params["query"], result_type: 'recent', geocode:"39.4,-76.6,10000mi", lang: 'en', page:1, rpp:100 }, function(err, reply) {
+    twitter.get('search', { q: req.params["query"], result_type: 'mixed', geocode:"39.4,-76.6,10000mi", lang: 'en', page:1, rpp:80 }, function(err, reply) {
     if (err!==null || reply ==null){
             console.log("Errors:",err);
         }
@@ -169,6 +169,7 @@ app.get("/kml/:query",function(req,res)
             </Document>\
             </kml>';
         
+	console.log(kml);
             res.writeHead(200, {
             "Content-Type": "application/xml",
             "Access-Control-Allow-Origin": "*"
@@ -255,11 +256,11 @@ app.get("/flickr/:query/:tagMode", function(req,res)
 			var imgTagEndOne = "' class='active' />";
 			var imgTagEngOther = "' />";
 			var i = 0;
-			if (reply.photos.total < 10){
+			if (reply.photos.total < 100){
 				i = reply.photos.total;
 			}
 			else{
-				i = 10;
+				i = 100;
 			} 
 			for(var k=0; k<i; k++){
 			//http://farm{farm-id}.staticflickr.com/{server-id}/{id}_{secret}.jpg
@@ -276,7 +277,7 @@ app.get("/flickr/:query/:tagMode", function(req,res)
 			if(!picsToHTML){
 				picsToHTML = "<p>No photos were found matching your query.</p>"
 			}
-			console.log(picsToHTML);
+			//console.log(picsToHTML);
 			res.end(picsToHTML);
 		}
 	});
