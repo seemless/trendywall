@@ -69,25 +69,6 @@ tweetToHTML += "<div style='border-bottom:1px solid #777; padding-bottom:10px; d
         });           
     });
     
-    
-//if we want to send raw json to the browser, otherwise use /kml to send gearth formatted kml result back
-app.get("/geoTweets/:query",function(req,res)
-    {
-            twitter.get('search', { q: req.params["query"], result_type: 'mixed', geocode:"39.4,-76.6,10000mi", lang: 'en', page:1, rpp:50 }, function(err, reply) {
-          if (err!==null){
-                console.log("twitter call errors:",err);
-            }
-            else{
-            res.writeHead(200, {
-                "Content-Type": "application/json",
-                "Access-Control-Allow-Origin": "*"
-                });
-            res.end(JSON.stringify(reply));
-            }
-            
-        });           
-    });
-
 //we'll use this to send the most recent tweet with the mentioned query and return the result as a kml file
 app.get("/kml/:query",function(req,res)
 {

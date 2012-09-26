@@ -59,7 +59,6 @@ var networkLink;
     function failureCB(errorCode) {
     }
     
-    var geoTweets = {};
     
     
     //Everything in this functions runs immediately on load
@@ -227,15 +226,6 @@ function loadPage(searchTerms){
 	$("#slideshow").load(flickrUrl);
 
           google.setOnLoadCallback(init);
-/*
-  //lets grab some tweets for use in gearth... not so fast
-       $.ajax({     
-   url: './geoTweets/'+searchTerms+'',
-   dataType: 'json'
-  }).done(function( data ) {
-  geoTweets = data;
-  });
-*/
 
 
   $("#tweetTitle").html("Live "+searchTerms+" Tweets");
