@@ -161,12 +161,6 @@ app.get("/kml/:query",function(req,res)
     });
 });   
     
-    
-app.get("/earth",function(req,res)
-    {
-        res.render("earth.ejs", { layout: false});
-        
-    });
 
 app.get("/news", function(req,res)
     {   
@@ -191,10 +185,6 @@ app.get("/trendywall",function(req,res)
           res.render("trendywall.ejs", { layout: false });
     });
 
-app.get("/wordle", function(req,res)
-    {   
-        res.render("wordle.ejs", {layout: false});
-    });
 
 app.get("/flickr/:query/:tagMode", function(req,res)
 	{
