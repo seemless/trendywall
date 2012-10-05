@@ -10,8 +10,10 @@ var flickrKey = fconf.getConf()['consumer_key'];
 var flickrSecret = fconf.getConf()['consumer_sercret'];
 var flickr= new Flickr(flickrKey, flickrSecret);
 
-//I guess this is the only way to include client side scripts and css?
-//they would go here
+var ozone = require("./routes/ozone-handlers.js");
+
+app.get('/ozone/tweets/:query', ozone.tweets);
+
 
 // route routing is very easy with express, this will handle the request for root directory contents.
 // :id is used here to pattern match with the first value after the forward slash.
@@ -161,6 +163,8 @@ app.get("/kml/:query",function(req,res)
     });
 });   
     
+
+  
 
 app.get("/news", function(req,res)
     {   
