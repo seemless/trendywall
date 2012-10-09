@@ -60,6 +60,7 @@ var TweetHandlers = function() {
     return {
         getHtmlTweets: getHtmlTweets,
         getJsonTweets: getJsonTweets,
+        getBreakingNews: getBreakingNews,
        
     }
 }();
