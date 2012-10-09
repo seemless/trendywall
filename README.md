@@ -7,9 +7,9 @@ Making a map mashup for the lobby.
 To Do:
 -----
 
-*Make Google trends more relevant (news trends?)
-*Make twitter a streaming div
-*Make google trends refresh (stream)
+* Make Google trends more relevant (news trends?)
+* Make twitter a streaming div
+* Make google trends refresh (stream)
 
 
 Installing/Running:
