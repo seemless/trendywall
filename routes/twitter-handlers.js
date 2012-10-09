@@ -3,13 +3,13 @@ var tconf = require("../conf/twitconf"); //config file for twitter
 var twitter = new twit(tconf.getConf());
 
 var TweetHandlers = function() {
-    var getTweets= function(queryParam,callback) {
+    var getHtmlTweets= function(queryParam,callback) {
     	var tweetToHTML = "";
         twitter.get('search', { q: queryParam, result_type: 'mixed', geocode:"39.4,-76.6,1000mi", lang: 'en', page:1, rpp:12 }, function(err, reply) {
         	
         	if (err!==null){
             	console.log("Errors:",err);
-            	callback(err,reply);
+            	callback(err,null);
             }
             else{
             	for (key in reply.results){
@@ -20,14 +20,46 @@ var TweetHandlers = function() {
                 	<b>"+reply.results[key].from_user+"</b> - "+reply.results[key].location+"</div>\
                 	</div>";
                 }
+
                 callback(null,tweetToHTML);
             }
         });
         
     }
 
+    var getJsonTweets = function(queryParam,callback) {
+        var tweetToHTML = "";
+        twitter.get('search', { q: queryParam, result_type: 'mixed', geocode:"39.4,-76.6,1000mi", lang: 'en', page:1, rpp:12 }, function(err, reply) {
+            
+            if (err!==null){
+                console.log("Errors:",err);
+                callback(err,null);
+            }
+            else{
+                callback(reply.results,null);
+            }
+        }
+    }
+    var getBreakingNews = function(callback){
+        twitter.get('search', { q: "BreakingNews", result_type: 'recent', lang: 'en', page:1, rpp:8 }, function(err, reply) {
+            if (err!==null){
+                console.log("Errors:",err);
+                callback(err,null);
+            }
+            else{
+                var tweetToHTML = "";
+                for (key in reply.results){
+                    tweetToHTML += "@"+reply.results[key].from_user +": "+reply.results[key].text+"... ";
+                }
+                //tweetToHTML += "</p>";
+                callback(null,tweetToHTML);
+            }
+        });
+    }
+
     return {
-        getTweets: getTweets,
+        getHtmlTweets: getHtmlTweets,
+        getJsonTweets: getJsonTweets,
        
     }
 }();
