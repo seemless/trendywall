@@ -1,0 +1,17 @@
+!!!
+html
+  head
+    title twitter
+  body
+    h1 twitter Updates
+    ul.data
+
+    script(src='http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js')
+    script(src='http://jquery-json.googlecode.com/files/jquery.json-2.2.min.js')
+    script(type='text/javascript')
+      var source = new EventSource('/ozone/streamTweets/yankees');
+      console.log(source);
+      source.addEventListener('message', function(e) {
+        console.log(e);
+        $('ul').append('<li>' + e.data + ' (message id: ' + e.lastEventId + ')</li>');
+      }, false);
