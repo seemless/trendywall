@@ -12,6 +12,7 @@ var flickr= new Flickr(flickrKey, flickrSecret);
 var glossary = require("glossary")({verbose: true, collapse: true, minFreq: 2});
 var FeedParser = require('feedparser');
 var async = require('async');
+var cheerio = require('cheerio');
 
 //I guess this is the only way to include client side scripts and css?
 //they would go here
@@ -52,7 +53,7 @@ app.get("/googleTopTechNews",function(req,res)
 
 app.get("/tweets/:query",function(req,res)
     {
-            twitter.get('search', { q: req.params["query"], result_type: 'mixed', geocode:"39.4,-76.6,1000mi", lang: 'en', page:1, rpp:12 }, function(err, reply) {
+            twitter.get('search', { q: req.params["query"], result_type: 'recent', geocode:"39.4,-76.6,1000mi", lang: 'en', page:1, rpp:12 }, function(err, reply) {
           if (err!==null){
                 console.log("Errors:",err);
             }
@@ -244,12 +245,13 @@ app.get("/flickr/:query/:tagMode", function(req,res)
 	});
 });
 
+// Word Cloud Word Generation
 app.get("/getWordcloudWords", function(req, res){
     res.type("text/plain");
 
     var textStringsArray = []; // Text to make the wordcloud from
     var feeds = [
-        'http://english.aljazeera.net/Services/Rss/?PostingId=2007731105943979989' // Aljazeera English
+        'http://english.aljazeera.net/Services/Rss/?PostingId=2007731105943979989', // Aljazeera English
     ];
 
     function parseFeed(d, callback){

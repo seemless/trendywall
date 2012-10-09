@@ -1,144 +1,112 @@
 <html>
 <head>
-<title>G2 Real-Time Information Wall</title>
-<style>
-    
-    #slideshow {
-        position:relative;
-        height:350px;
-    }
-
-    #slideshow IMG {
-        position:absolute;
-        top:0;
-        left:0;
-        z-index:8;
-        opacity:0.0;
-    }
-
-    #slideshow IMG.active {
-        z-index:10;
-        opacity:1.0;
-   }
-
-    #slideshow IMG.last-active {
-        z-index:9;
-    }
-
-    </style>
-<link type="text/css" href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.1/themes/dark-hive/jquery-ui.css" rel="Stylesheet" />
-<style>
-    body { font-size: 62.5%; }
-    label, input { display:block; }
-    input.text { margin-bottom:12px; width:95%; padding: .4em; }
-    fieldset { padding:0; border:0; margin-top:25px; }
-    h1 { font-size: 1.2em; margin: .6em 0; }
-    .ui-dialog .ui-state-error { padding: .3em; }
-    .validateTips { border: 1px solid transparent; padding: 0.3em; }
-</style>
-<script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.1/jquery.min.js"></script>
-<script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.8.23/jquery-ui.min.js"></script>
-<script type="text/javascript" src="https://www.google.com/jsapi"></script>
+  <title>G2 Real-Time Information Wall</title>
+  <link type="text/css" href="/static/css/main.css" rel="stylesheet" />
+  <link type="text/css" href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.1/themes/dark-hive/jquery-ui.css" rel="Stylesheet" />
   
-<script type="text/javascript" src="/static/js/d3.v2.min.js"></script>
-<script type="text/javascript" src="/static/js/d3.layout.cloud.js"></script>
-<script type="text/javascript" src="/static/js/doCloud.js"></script>Z
+  <script type="text/javascript" src="//ajax.googleapis.com/ajax/libs/jquery/1.8.1/jquery.min.js"></script>
+  <script type="text/javascript" src="//ajax.googleapis.com/ajax/libs/jqueryui/1.8.23/jquery-ui.min.js"></script>
+  <script type="text/javascript" src="https://www.google.com/jsapi"></script>
+  <script type="text/javascript" src="/static/js/d3.v2.min.js"></script>
+  <script type="text/javascript" src="/static/js/d3.layout.cloud.js"></script>
+  <script type="text/javascript" src="/static/js/doCloud.js"></script>
 
- <script>
-   
-    var ge;
-    google.load("earth", "1.008");
-var networkLink;    
-    
-    function init() {
-  google.earth.createInstance('map3d', initCB, failureCB);
-    }
+  <script>
 
-    function initCB(instance) {
-      ge = instance;
-      ge.getWindow().setVisibility(true);
-      newPoint(ge,39.125,-76.788);
-    }
+  var ge;
+  google.load("earth", "1");
+  
+  var networkLink;    
 
-    function failureCB(errorCode) {
-    }
-    
-    
-    
+  function init() {
+    google.earth.createInstance('map3d', initCB, failureCB);
+  }
+
+  function initCB(instance) {
+    ge = instance;
+    ge.getWindow().setVisibility(true);
+    newPoint(ge,39.125,-76.788);
+  }
+
+  function failureCB(errorCode) {
+  }
+
+
+
     //Everything in this functions runs immediately on load
     $(function() {
 
-    
-    
-    var searchTerms = $( "#searchTerms" ),
+
+
+      var searchTerms = $( "#searchTerms" ),
       allFields = $( [] ).add( searchTerms )
       tips = $( ".validateTips" );
 
-    function updateTips( t ) {
-      tips
+      function updateTips( t ) {
+        tips
         .text( t )
         .addClass( "ui-state-highlight" );
-      setTimeout(function() {
-        tips.removeClass( "ui-state-highlight", 1500 );
-      }, 500 );
-    }
-
-    function checkLength( o, n, min, max ) {
-      if ( o.val().length > max || o.val().length < min ) {
-        o.addClass( "ui-state-error" );
-        updateTips( "Length of " + n + " must be between " +
-          min + " and " + max + "." );
-        return false;
-      } else {
-        return true;
+        setTimeout(function() {
+          tips.removeClass( "ui-state-highlight", 1500 );
+        }, 500 );
       }
-    }
 
-    function checkRegexp( o, regexp, n ) {
-      if ( !( regexp.test( o.val() ) ) ) {
-        o.addClass( "ui-state-error" );
-        updateTips( n );
-        return false;
-      } else {
-        return true;
+      function checkLength( o, n, min, max ) {
+        if ( o.val().length > max || o.val().length < min ) {
+          o.addClass( "ui-state-error" );
+          updateTips( "Length of " + n + " must be between " +
+            min + " and " + max + "." );
+          return false;
+        } else {
+          return true;
+        }
       }
-    }
 
-    $( "#dialog-form" ).dialog({
-      autoOpen: false,
-      show: "fade",
-      hide: "fade",
-      height: 300,
-      width: 500,
-      modal: true,
-      buttons: {
-        "Submit": function() {
+      function checkRegexp( o, regexp, n ) {
+        if ( !( regexp.test( o.val() ) ) ) {
+          o.addClass( "ui-state-error" );
+          updateTips( n );
+          return false;
+        } else {
+          return true;
+        }
+      }
 
-          var bValid = true;
-          allFields.removeClass( "ui-state-error" );
+      $( "#dialog-form" ).dialog({
+        autoOpen: false,
+        show: "fade",
+        hide: "fade",
+        height: 300,
+        width: 500,
+        modal: true,
+        buttons: {
+          "Submit": function() {
 
-          bValid = bValid && checkLength( searchTerms, "searchTerms", 2, 160 );
+            var bValid = true;
+            allFields.removeClass( "ui-state-error" );
 
-          bValid = bValid && checkRegexp( searchTerms, /^[a-z]([0-9a-z_])+$/i, "searchTerms may consist of a-z, 0-9, underscores, begin with a letter." );
+            bValid = bValid && checkLength( searchTerms, "searchTerms", 2, 160 );
 
-          if ( bValid ) {
-            searchTerms = $("#searchTerms").val();
-             $( this ).dialog( "close" );         
-            loadPage(searchTerms);
-            init();
-          }
+            bValid = bValid && checkRegexp( searchTerms, /^[a-z]([0-9a-z_])+$/i, "searchTerms may consist of a-z, 0-9, underscores, begin with a letter." );
+
+            if ( bValid ) {
+              searchTerms = $("#searchTerms").val();
+              $( this ).dialog( "close" );         
+              loadPage(searchTerms);
+              init();
+            }
+          },
         },
-      },
-      close: function() {
-        allFields.val( "" ).removeClass( "ui-state-error" );
-      }
-    });
-        
-  $( "#dialog-form" ).dialog( "open" );
-});
-       
+        close: function() {
+          allFields.val( "" ).removeClass( "ui-state-error" );
+        }
+      });
 
-       
+      $( "#dialog-form" ).dialog( "open" );
+    });
+
+
+
 function newPoint(ge,lat,lon){
 
 // Create the placemark.
@@ -177,17 +145,17 @@ lookAt.setRange(500000.0)
 ge.getView().setAbstractView(lookAt);
 
 }
-    
+
     /*
     var searchTerms = [
   ["internet"],["cybersecurity"],["hackers"],["hacking"],["hacktivism"],["scada"],["internet"],["information security"],["network security"],["sentiment analysis"],
   ["information analysis"],["information visualization"],["security visualization"],["linux"],["java"],["c++"],["network sockets"],["0-day"],["0day"],
   ["defcon"],["blackhat"],["computer virus"],["malware"],["information security professionals"],["military industial complex"]];
-    */
+  */
 
 
 
-function setNewTweet(query){
+  function setNewTweet(query){
 //Time to pull in some geocoded tweets
 //var currentHref = window.location.href.slice(0,-18);
 //var href = currentHref+"/kml/"+query+'';
@@ -210,40 +178,40 @@ networkLink.setLink(link);
 // add the NetworkLink feature to Earth
 ge.getFeatures().appendChild(networkLink);
 }
- 
-    
+
+
 function loadPage(searchTerms){
     //flickrTerms can be a comma separated list
-  flickrTerms = searchTerms;
-  flickrTagMode = "all";
-  flickrUrl = "./flickr/"+flickrTerms+"/"+flickrTagMode;
+    flickrTerms = searchTerms;
+    flickrTagMode = "all";
+    flickrUrl = "./flickr/"+flickrTerms+"/"+flickrTagMode;
 
 
-         $(".dragStar").draggable();
-        $(".resizeStar").resizable();
-        $("#storeNews").load("./googleTopWorldNews");
-        $("#tweets").load("./tweets/"+searchTerms+"");
-        $("#gohere").load("./twitter-earth");
-        $("#news marquee").load("./news");
+    $(".dragStar").draggable();
+    $(".resizeStar").resizable();
+    $("#storeNews").load("./googleTopWorldNews");
+    $("#tweets").load("./tweets/"+searchTerms+"");
+    $("#gohere").load("./twitter-earth");
+    $("#news marquee").load("./news");
 
 
-	$("#slideshow").load(flickrUrl);
+    $("#slideshow").load(flickrUrl);
 
-          google.setOnLoadCallback(init);
+    google.setOnLoadCallback(init);
 
 
-  $("#tweetTitle").html("Live "+searchTerms+" Tweets");
-  $("#imagesTitle").html(searchTerms+" Images");
-  
+    $("#tweetTitle").html("Live "+searchTerms+" Tweets");
+    $("#imagesTitle").html(searchTerms+" Images");
+
 // *************SLIDESHOWS**********************
-    setInterval( function() {
-    var $active = $('#slideshow IMG.active');
+setInterval( function() {
+  var $active = $('#slideshow IMG.active');
 
-    if ( $active.length == 0 ) $active = $('#slideshow IMG:last');
+  if ( $active.length == 0 ) $active = $('#slideshow IMG:last');
 
     // use this to pull the images in the order they appear in the markup
     var $next =  $active.next().length ? $active.next()
-        : $('#slideshow IMG:first');
+    : $('#slideshow IMG:first');
 
     // uncomment the 3 lines below to pull the images in random order
 
@@ -255,22 +223,24 @@ function loadPage(searchTerms){
     $active.addClass('last-active');
 
     $next.css({opacity: 0.0})
-        .addClass('active')
-        .animate({opacity: 1.0}, 1000, function() {
-            $active.removeClass('active last-active');
-        });
+    .addClass('active')
+    .css("max-width", $('#slideshow').width())
+    .css("max-height", $('#slideshow').height())
+    .animate({opacity: 1.0}, 1000, function() {
+      $active.removeClass('active last-active');
+    });
     $active.hide();
     $next.show();
-}, 10000 );
+  }, 10000 );
 
-      
-        
+
+
         //refresh tweeties every 120 seconds  (in the future we'll probably want to do multiple pages per refresh to ensure no duplicare reloads.)
         setInterval(function() {
-             $("#tweets").fadeOut();
-             $("#tweets").load("./tweets/"+searchTerms+"");
-             $("#tweets").fadeIn();
-            }, 120000);
+         $("#tweets").fadeOut();
+         $("#tweets").load("./tweets/"+searchTerms+"");
+         $("#tweets").fadeIn();
+       }, 120000);
 
         setInterval(function() {
           $("#news marquee").load("./news");
@@ -278,87 +248,101 @@ function loadPage(searchTerms){
           
         }, 120000);
 
-  
+
   //pull in our initial google earth tweet after 4 seconds
 //  setTimeout(function() {
   //      setNewTweet(searchTerms);
     //    }, 4000);
 
-  setTimeout(function() {
-    $("#storeNews").load("./googleTopWorldNews");
-    $("#googleNews").fadeOut();
-    $("#googleNews").html('');
-    $("#s_INTERESTING").clone().appendTo($("#googleNews"));
-    $("#s_POPULAR").clone().appendTo($("#googleNews"));
-    $(".small-story").css('padding','12px');
-    $("#googleNews").fadeIn();
-    }, 4000);
+setTimeout(function() {
+  $("#storeNews").load("./googleTopWorldNews", function(){
+      $(".gadget").toggleClass("ui-widget-reset ui-widget ui-widget-content").removeClass(".gadget");
+      $(".basic-title").toggleClass("ui-widget-header").removeClass("basic-title");
+      $(".sub-title").after("<br/>");
+  });
+  $("#googleNews").fadeOut();
+  $("#googleNews").html('');
+  $("#s_INTERESTING").clone().appendTo($("#googleNews"));
+  $("#s_POPULAR").clone().appendTo($("#googleNews"));
+  $("#googleNews").fadeIn();
+}, 4000);
 
-  
+
   //pull in new google earth tweet every 30 seconds (without authenticating we can only do about 1 request every 24 seconds)
   setInterval( function(){
-        setNewTweet(searchTerms)
-       } , 10000);
+    setNewTweet(searchTerms)
+  } , 10000);
 
 
   //refresh google news every 1 hour
   setInterval(function() {
-      $("#storeNews").load("./googleTopWorldNews");
-      $("#googleNews").fadeOut();
-      $("#googleNews").html('');
-      $("#s_INTERESTING").clone().appendTo($("#googleNews"));
-      $("#s_POPULAR").clone().appendTo($("#googleNews"));
-      $("#googleNews").fadeIn();
-      }, 600000);
-  }
+    $("#storeNews").load("http://news.google.com/news/section?pz=1&cf=all&ned=us&topic=w&output=html", function(){
+
+    });
+    $("#googleNews").fadeOut();
+    $("#googleNews").html('');
+    $("#s_INTERESTING").clone().appendTo($("#googleNews"));
+    $("#s_POPULAR").clone().appendTo($("#googleNews"));
+    $("#googleNews").fadeIn();
+
+  }, 600000);
+}
+
+  $(window).load(function(){
+    doCloud();  
+  });
 
   // Update WordCloud every 10 minutes
-  setInterval(doCloud(), 10*60*100);
-
+  setInterval(doCloud(), 30*1000);
   
-</script>
+  
+  </script>
 
 </head>
-<body style="margin: 0; padding: 0; background-color: black; font-family: Helvetica; font-size: 90%; overflow:hidden;">
+<body style="background-color: black;">
+  <div id="level1top" style="height: 90%;">
+    <div id="level2left" style="float: left; width: 20%; height: 100%;">
+      <div class="content-wrapper">
+        <div id="googleNews"></div>
+      </div>
+    </div>
+    <div id="level2center" style="float: left; width: 60%;">
+      <div id="level3top" style="height: 50%; width: 100%;">
+        
+          <div id="map3d"></div>
+        
+      </div>
+      <div id="level3bottom" style="height: 50%; width: 100%;">
+        <div id="level4left" style="float: left; width: 50%;">
+          <div id="slideshow" style="overflow: hidden; width: 100%; height: 100%;" class="ui-widget-content"></div>
+        </div>
+        <div id="level4right" style="float: left; width: 50%; height: 100%;">
+          <div id="wordcloud" style="width: 100%; height: 100%;" class="ui-widget-content"></div>
+        </div>
+      </div>
+    </div>
+    <div id="level2right" style="float: right; width: 19.8%; height: 100%;">
+      <div id="tweets" class="ui-widget-content"></div>
+    </div>
+  </div>
+  <div id="level1bottom" style="height: 10%;" class="ui-widget-content">
+    <div style="padding-left:2px; padding-top:2px; float:left;"><span style="color:#dd3333; font-size:16; font-weight:bold;">#Breaking News</span></div>
+    <div id="news" style="font-size:20; float:right;"><marquee behavior="scroll" direction="left" scrollamount="8" height=10px width="98%"></marquee></div>  
+  </div>
 
-<div id="left" style="width: 350px; height:1080px; float: left; padding: 10px;" class="ui-widget-content ui-corner-all dragStar">
-    <div id="googleNews"></div>
-</div>
-
-<div id="top" style="float: left; padding: 10px;" class="ui-widget-content ui-corner-all dragStar">
-    <div id="map3d" style="height: 524px; width: 796px;"></div>
-</div>
-
-<div id="middle" style="float: left; padding: 10px;" class="ui-widget-content ui-corner-all dragStar">
-     <div class="basic-title" style="padding-left:2px; padding-top:2px;"><span id="imagesTitle" style="color:#222222; font-size:16; font-weight:normal; line-height:18px;">Images</span></div>
-<div id="slideshow" style="float:left; height: 524px; width: 549px;"></div>
-<div id="wordcloud" style="float:left; height: 524px; width: 549px;"></div>
-</div>
-
-<div id="right" style="width: 390px; height:1080px; float: left; padding: 10px; position:absolute; right:0px" class="ui-widget-content ui-corner-all dragStar">
-    <div class="basic-title" style="padding-left:2px; padding-top:2px;"><span id="tweetTitle" style="color:#222222; font-size:16; font-weight:normal; line-height:18px;">Tweets</span></div>
-    <div id="tweets"></div>
-</div>
-
-<div id="bottom" style="z-index:50; width: 100%; float: left; padding: 10px; height:20px; position:absolute; bottom:-4px" class="ui-widget-content ui-corner-all dragStar resizeStar">
-    <div style="padding-left:2px; padding-top:2px; width:136px; float:left;"><span style="color:#dd3333; font-size:16; font-weight:bold;">#Breaking News</span></div>
-    <div id="news" style="font-size:20; float:right; width:1450px;"><marquee behavior="scroll" direction="left" scrollamount="8" height=10px width="98%"></marquee></div>
-</div>
-
+<!-- Hidden Divs -->
 <div id="storeNews" style="visibility:hidden; height:1px; width:1px;"></div>
-
 <div id="hidden" style="width: 25%; float: left; padding: 10px; visibility:hidden;">
-    <div id="googleTrends"></div>
+  <div id="googleTrends"></div>
 </div>
-
 <div id="dialog-form" title="Areas of Interest">
   <p class="validateTips"><!--Use commas between multiple interests--></p>
 
   <form>
-  <fieldset>
-    <label for="searchTerms">Enter Interest</label>
-    <input type="text" name="searchTerms" id="searchTerms" class="text ui-widget-content ui-corner-all" />
-  </fieldset>
+    <fieldset>
+      <label for="searchTerms">Enter Interest</label>
+      <input type="text" name="searchTerms" id="searchTerms" class="text ui-widget-content ui-corner-all" />
+    </fieldset>
   </form>
 </div>
 

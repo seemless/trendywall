@@ -1,13 +1,20 @@
 function doCloud(){
+  var w = $("div#wordcloud").width();
+  var h = $("div#wordcloud").height();
+
+  if(w == null | h == null){
+    return;
+  }
+
   $.getJSON("/getWordcloudWords", function(data, text, obj){
       var fontSize = d3.scale.log().range([10, 100]);
       var layout = d3.layout.cloud()
-      .size([500, 500])
+      .size([w, h])
       .timeInterval(10)
       .text(function(d) { return d.word; })
       .font("Arial Narrow")
       .fontSize(function(d){return fontSize(+d.count); })
-      .rotate(function(d) { return ~~(Math.random() * 5) * 30 - 60; })
+      //.rotate(function(d) { return ~~(Math.random() * 5) * 30 - 60; })
       .padding(5)
       .on("end", draw)
       .words(data)
@@ -16,10 +23,10 @@ function doCloud(){
       function draw(words) {
         console.log(words);
         d3.select("#wordcloud").append("svg")
-        .attr("width", 500)
-        .attr("height", 500)
+        .attr("width", w)
+        .attr("height", h)
         .append("g")
-        .attr("transform", "translate(250,250)")
+        .attr("transform", "translate(" + w/2 + "," + h/2 + ")")
         .selectAll("text")
         .data(words)
         .enter().append("text")
