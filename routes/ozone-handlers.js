@@ -21,7 +21,7 @@ var OzoneHandlers = function() {
         twitterHandlers.getBreakingNews(function(err, reply){
 
             if(err !== null){
-                console.log("Error on OzoneHandlers.tweets()" + err);
+                console.log("Error on OzoneHandlers.breakingNews()" + err);
                 res.end("No tweets found at this time.");
             }
             else{
@@ -35,12 +35,33 @@ var OzoneHandlers = function() {
         });
     }
 
+    var streamTweets = function(req,res){
+        console.log("streamTweets hit.");
+        req.socket.setTimeout(0);
+        var topic = req.params.topic;
+        var stream = twitterHandlers.getStream(topic);
+
+        stream.on('tweet', function (tweet) {
+            //console.log(tweet);
+            res.write("data: " + tweet.text + '\n\n'); // Note the extra newline
+           
+        });
+          //send headers for event-stream connection
+        res.writeHead(200, {
+          'Content-Type': 'text/event-stream',
+          'Cache-Control': 'no-cache',
+          'Connection': 'keep-alive'
+        });
+        res.write('\n');
+        }
 
 
-    return {
-        tweets: tweets,
-        breakingNews: breakingNews,
-    }
+
+        return {
+            tweets: tweets,
+            breakingNews: breakingNews,
+            streamTweets: streamTweets,
+        }
 }();
 
 module.exports = OzoneHandlers;
