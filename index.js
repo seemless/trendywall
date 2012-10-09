@@ -9,9 +9,15 @@ var fconf = require("./conf/flickrconf");
 var flickrKey = fconf.getConf()['consumer_key'];
 var flickrSecret = fconf.getConf()['consumer_sercret'];
 var flickr= new Flickr(flickrKey, flickrSecret);
+var glossary = require("glossary")({verbose: true, collapse: true, minFreq: 2});
+var FeedParser = require('feedparser');
+var async = require('async');
 
 //I guess this is the only way to include client side scripts and css?
 //they would go here
+
+// Serve static files
+app.use("/static", express.static(__dirname + '/static'));
 
 // route routing is very easy with express, this will handle the request for root directory contents.
 // :id is used here to pattern match with the first value after the forward slash.
@@ -238,7 +244,59 @@ app.get("/flickr/:query/:tagMode", function(req,res)
 	});
 });
 
+app.get("/getWordcloudWords", function(req, res){
+    res.type("text/plain");
 
+    var textStringsArray = []; // Text to make the wordcloud from
+    var feeds = [
+        'http://english.aljazeera.net/Services/Rss/?PostingId=2007731105943979989' // Aljazeera English
+    ];
+
+    function parseFeed(d, callback){
+        var parser = new FeedParser();
+        parser.parseUrl(d, function(error, meta, articles){
+            if(!error){
+                var out = "";
+                for(var a in articles){
+                    out += " " + articles[a].description + " " + articles[a].summary + " " + articles[a].title;
+                }
+
+                // Store results from this feed.
+                textStringsArray.push(out);
+
+                // Done.
+                callback(null, out);
+            }
+            
+            else{
+                console.error(error);
+                callback(error, null);
+            }
+        });
+    }
+
+    async.forEach(feeds, parseFeed, function(err){
+        if(err){
+            console.error(err);
+            res.end();
+        } else {
+            var s = "";
+            for(i in textStringsArray){ s += textStringsArray[i]; }
+
+
+
+            // Use Glossary to pick out important words & count them.
+            var words = glossary.extract(s.toLowerCase());
+            words.sort(function(a,b){
+                return b.count-a.count;
+            });
+
+            // Return.
+            res.end(JSON.stringify(words));
+        }
+    });
+    
+});
 
 //process.env.PORT is a cloud9 thing. Use your own port (ex 9999) if on a normal platform.
 app.listen(3000);

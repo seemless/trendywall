@@ -40,6 +40,10 @@
 <script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.8.23/jquery-ui.min.js"></script>
 <script type="text/javascript" src="https://www.google.com/jsapi"></script>
   
+<script type="text/javascript" src="/static/js/d3.v2.min.js"></script>
+<script type="text/javascript" src="/static/js/d3.layout.cloud.js"></script>
+<script type="text/javascript" src="/static/js/doCloud.js"></script>Z
+
  <script>
    
     var ge;
@@ -308,6 +312,9 @@ function loadPage(searchTerms){
       }, 600000);
   }
 
+  // Update WordCloud every 10 minutes
+  setInterval(doCloud(), 10*60*100);
+
   
 </script>
 
@@ -324,7 +331,8 @@ function loadPage(searchTerms){
 
 <div id="middle" style="float: left; padding: 10px;" class="ui-widget-content ui-corner-all dragStar">
      <div class="basic-title" style="padding-left:2px; padding-top:2px;"><span id="imagesTitle" style="color:#222222; font-size:16; font-weight:normal; line-height:18px;">Images</span></div>
-<div id="slideshow" style="height: 524px; width: 796px;"></div>
+<div id="slideshow" style="float:left; height: 524px; width: 549px;"></div>
+<div id="wordcloud" style="float:left; height: 524px; width: 549px;"></div>
 </div>
 
 <div id="right" style="width: 390px; height:1080px; float: left; padding: 10px; position:absolute; right:0px" class="ui-widget-content ui-corner-all dragStar">
