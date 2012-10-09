@@ -38,8 +38,9 @@ var TweetHandlers = function() {
             else{
                 callback(reply.results,null);
             }
-        }
+        });
     }
+    
     var getBreakingNews = function(callback){
         twitter.get('search', { q: "BreakingNews", result_type: 'recent', lang: 'en', page:1, rpp:8 }, function(err, reply) {
             if (err!==null){
