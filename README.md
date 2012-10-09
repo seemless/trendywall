@@ -1,29 +1,20 @@
-trendywall
+TrendyWall
 ==========
 
 Making a map mashup for the lobby. 
 
-Todo:
 
-Make Google trends more relevant (news trends?)
+To Do:
+-----
 
-Make twitter a streaming div
-
-Make wordle
-
-Make google trends refresh (stream)
+*Make Google trends more relevant (news trends?)
+*Make twitter a streaming div
+*Make google trends refresh (stream)
 
 
-node libaries currently in use:
+Installing/Running:
+------------------
 
-ejs 
-
-express
-
-geohash
-
-twit
-
-request
-
-jquery
+1. Pull the code from the repo.
+2. Run `npm install`
+3. Run `node index.js`
