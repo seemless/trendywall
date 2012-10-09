@@ -32,13 +32,14 @@ var OzoneHandlers = function() {
                 //tweetToHTML += "</p>";
                 res.end(tweetToHTML);
             }
-        })
+        });
     }
 
 
 
     return {
         tweets: tweets,
+        breakingNews: breakingNews,
     }
 }();
 
