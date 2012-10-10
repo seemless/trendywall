@@ -10,9 +10,23 @@ var flickrKey = fconf.getConf()['consumer_key'];
 var flickrSecret = fconf.getConf()['consumer_sercret'];
 var flickr= new Flickr(flickrKey, flickrSecret);
 
+
+
 var ozone = require("./routes/ozone-handlers.js");
 
+
+app.configure(function(){
+  app.set('views', __dirname + '/views');
+  app.set('view engine', 'jade');
+});
+
+app.get('/ozone', function(req, res){
+  res.render('twitterStream.jade');
+});
+
 app.get('/ozone/tweets/:query', ozone.tweets);
+app.get('/ozone/breakingNews', ozone.breakingNews);
+app.get('/ozone/streamTweets/:topic', ozone.streamTweets);
 
 
 // route routing is very easy with express, this will handle the request for root directory contents.
