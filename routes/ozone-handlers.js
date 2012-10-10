@@ -42,9 +42,21 @@ var OzoneHandlers = function() {
         var stream = twitterHandlers.getStream(topic);
 
         stream.on('tweet', function (tweet) {
-            //console.log(tweet);
-            res.write("data: " + tweet.text + '\n\n'); // Note the extra newline
-           
+            console.log("tweet received.");
+            if(tweet.text){
+                console.log(tweet.text);
+                var smallVersion = {
+                                    "user": tweet.user.name,
+                                    "img_url": tweet.user.profile_image_url,
+                                    "location": tweet.location,
+                                    "text": tweet.text
+                                    }
+                //console.log(smallVersion);
+                //res.write(smallVersion);
+                //res.write('img_url: ' + tweet.user.profile_image_url + '\n');
+                //res.write('user: ' + tweet.user.name + '\n');
+                res.write("data: " + JSON.stringify(smallVersion)+ '\n\n') // Note the extra newline, makes it JSON
+            }
         });
           //send headers for event-stream connection
         res.writeHead(200, {
@@ -53,7 +65,7 @@ var OzoneHandlers = function() {
           'Connection': 'keep-alive'
         });
         res.write('\n');
-        }
+    }
 
 
 
