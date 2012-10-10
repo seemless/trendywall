@@ -182,7 +182,7 @@ function newPoint(ge, lat, lon) {
     $(".dragStar").draggable();
     $(".resizeStar").resizable();
     $("#storeNews").load("./googleTopWorldNews");
-    $("#tweets").load("./tweets/" + searchTerms + "");
+//    $("#tweets").load("./tweets/" + searchTerms + "");
     $("#gohere").load("./twitter-earth");
     $("#news marquee").load("./news");
 
@@ -221,14 +221,16 @@ function newPoint(ge, lat, lon) {
       // $next.show();
     }, 10000);
 
+    // Build the word cloud
+    doCloud();
 
+    var twitterSource = new EventSource('/tweets/' + searchTerms);
+    twitterSource.addEventListener('message', function(e){
+      var tweet = $.parseJSON(e.data);
+      console.log(tweet);
+      $("#tweets").prepend("<div class='tweet'><img class='tweet-pic' src='" + tweet.img_url + "'/><div class='tweet-text'><span class='tweet-user'>" + tweet.user + "</span><br/>" + tweet.text + "</span></div>");
+    }, false);
 
-    //refresh tweeties every 120 seconds  (in the future we'll probably want to do multiple pages per refresh to ensure no duplicare reloads.)
-    setInterval(function() {
-      $("#tweets").fadeOut();
-      $("#tweets").load("./tweets/" + searchTerms + "");
-      $("#tweets").fadeIn();
-    }, 120000);
 
     setInterval(function() {
       $("#news marquee").load("./news");
@@ -270,9 +272,6 @@ function newPoint(ge, lat, lon) {
     }, 600000);
   }
 
-  $(window).load(function() {
-    doCloud();
-  });
   // Update WordCloud every 10 minutes
   setInterval(doCloud(), 30 * 1000);
 
@@ -300,7 +299,8 @@ function newPoint(ge, lat, lon) {
       </div>
     </div>
     <div id="level2right" style="float: right;">
-      <div id="tweets" class="content-wrapper"></div>
+      <div id="tweets" class="content-wrapper">
+      </div>
     </div>
   </div>
   <div id="level1bottom" style="" class="content-wrapper">

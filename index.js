@@ -16,7 +16,6 @@ var glossary = require("glossary")({
 });
 var FeedParser = require('feedparser');
 var async = require('async');
-var cheerio = require('cheerio');
 
 //I guess this is the only way to include client side scripts and css?
 //they would go here
@@ -51,34 +50,33 @@ app.get("/googleTopTechNews", function(req, res) {
     });
 });
 
-app.get("/tweets/:query", function(req, res) {
-    twitter.get('search', {
-        q: req.params["query"],
-        result_type: 'recent',
-        geocode: "39.4,-76.6,1000mi",
-        lang: 'en',
-        page: 1,
-        rpp: 12
-    }, function(err, reply) {
-        if(err !== null) {
-            console.log("Errors:", err);
+app.get("/tweets/:query", function(req, res){
+    var stream = twitter.stream('statuses/filter', { track: req.params["query"] });
+    stream.on('tweet', function(t){
+        if(t.text){
+            var smallTweet = {
+                "user": t.user.name,
+                "img_url": t.user.profile_image_url,
+                "coordinates": t.coordinates.coordinates,
+                "text": t.text
+            };
+            console.log(smallTweet);
+            res.write("data: " + JSON.stringify(smallTweet)+ '\n\n');
         } else {
-            var tweetToHTML = "";
-            for(var key in reply.results) {
-
-
-                tweetToHTML += "<div style='border-bottom:1px solid #777; padding-bottom:10px; display:block; position:relative;'>\
-                <a class><img width='48' height='48' src='" + reply.results[key].profile_image_url + "' style='float:left; background: black; border-top: 1px solid #333;\
-                border-left: 1px solid #333; border-bottom: 1px solid #666; border-right: 1px solid #666;'/></a>\
-                <div style='display:block; margin-left:60px;'><p>" + reply.results[key].text + "</p>\
-                <b>" + reply.results[key].from_user + "</b> - " + reply.results[key].location + "</div>\
-                </div>";
-
-            }
-            res.end(tweetToHTML);
+            console.log(t);
         }
-
     });
+
+    stream.on('limit', function(limit){
+        console.log(limit);
+    });
+
+    res.writeHead(200, {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive'
+    });
+    res.write('\n');
 });
 
 //we'll use this to send the most recent tweet with the mentioned query and return the result as a kml file
@@ -179,24 +177,24 @@ app.get("/kml/:query", function(req, res) {
 
 
 app.get("/news", function(req, res) {
-    twitter.get('search', {
-        q: "BreakingNews",
-        result_type: 'recent',
-        lang: 'en',
-        page: 1,
-        rpp: 8
-    }, function(err, reply) {
-        if(err !== null) {
-            console.log("Errors:", err);
-        } else {
-            var tweetToHTML = "";
-            for(var key in reply.results) {
-                tweetToHTML += "@" + reply.results[key].from_user + ": " + reply.results[key].text + "... ";
-            }
-            //tweetToHTML += "</p>";
-            res.end(tweetToHTML);
-        }
-    });
+    // twitter.get('search', {
+    //     q: "BreakingNews",
+    //     result_type: 'recent',
+    //     lang: 'en',
+    //     page: 1,
+    //     rpp: 8
+    // }, function(err, reply) {
+    //     if(err !== null) {
+    //         console.log("Errors:", err);
+    //     } else {
+    //         var tweetToHTML = "";
+    //         for(var key in reply.results) {
+    //             tweetToHTML += "@" + reply.results[key].from_user + ": " + reply.results[key].text + "... ";
+    //         }
+    //         //tweetToHTML += "</p>";
+    //         res.end(tweetToHTML);
+    //     }
+    // });
 
 });
 

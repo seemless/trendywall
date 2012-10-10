@@ -6,7 +6,6 @@ function doCloud(){
     return;
   }
 
-  console.log(w, h);
   $.getJSON("/getWordcloudWords", function(data, text, obj){
       var fontSize = d3.scale.log().range([10, 100]);
       var layout = d3.layout.cloud()
@@ -22,7 +21,6 @@ function doCloud(){
       .start();
 
       function draw(words) {
-        console.log(words);
         d3.select("#wordcloud").append("svg")
         .attr("width", w)
         .attr("height", h)

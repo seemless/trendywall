@@ -38,3 +38,26 @@ h1 {
 
 #slideshow IMG.last-active {
 }
+
+/*--- Tweets ---*/
+
+div.tweet {
+  border-bottom: 1px solid gray;
+  clear: both;
+  min-height: 62px;
+}
+
+.tweet-pic {
+  float: left;
+  padding: 5px;
+}
+
+.tweet-text {
+  padding: 5px;
+}
+
+.tweet-user {
+  margin: 0;
+  color: #888888;
+  text-transform: lowercase;
+}
