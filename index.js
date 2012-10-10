@@ -20,8 +20,8 @@ app.configure(function(){
   app.set('view engine', 'jade');
 });
 
-app.get('/ozone', function(req, res){
-  res.render('twitterStream.jade');
+app.get('/ozone/tweetStream/:topic', function(req, res){
+  res.render('twitterStream.jade',{topic:req.params.topic});
 });
 
 app.get('/ozone/tweets/:query', ozone.tweets);

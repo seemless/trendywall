@@ -3,16 +3,36 @@ html
   head
     title twitter
   body
-    h1 twitter Updates
-    ul.data
+    div.tweets
 
     script(src='http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js')
     script(src='http://jquery-json.googlecode.com/files/jquery.json-2.2.min.js')
     script(type='text/javascript')
-      var source = new EventSource('/ozone/streamTweets/yankees');
-      
+       
+      var source = new EventSource('/ozone/streamTweets/'+ '#{topic}');
       source.addEventListener('message', function(e) {
         var obj = JSON.parse(e.data)
-        console.log(obj);
-        $('ul').append('<li>' + obj.text+ '</li>');
+        console.log(obj.text);
+
+        var outerDiv = $('<div>').attr('style','border-bottom:1px solid #777; padding-bottom:10px; display:block; position:relative;');
+
+        var a = $('<a>');
+        var img = $('<img width="48" height="48">').attr('style','float:left; background: black; border-top: 1px solid #333; border-left: 1px solid #333; border-bottom: 1px solid #666; border-right: 1px solid #666;');
+        img.attr('src', obj.img_url);
+        img.appendTo(a);
+        a.appendTo(outerDiv);
+
+        var innerDiv = $('<div>').attr('style','display:block; margin-left:60px;');
+        var b = $('<b>');
+        b.html(obj.user);
+        var p = $('<p>');
+        p.html(obj.text);
+
+        b.appendTo(innerDiv);
+        p.appendTo(innerDiv);
+        innerDiv.appendTo(outerDiv);
+        outerDiv.appendTo('.tweets');
+        
+
+
       }, false);
