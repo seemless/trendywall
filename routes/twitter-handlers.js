@@ -40,7 +40,7 @@ var TweetHandlers = function() {
             }
         });
     }
-    
+
     var getBreakingNews = function(callback){
         twitter.get('search', { q: "BreakingNews", result_type: 'recent', lang: 'en', page:1, rpp:8 }, function(err, reply) {
             if (err!==null){
@@ -58,10 +58,18 @@ var TweetHandlers = function() {
         });
     }
 
+    var getStream = function(topic){
+
+        console.log("Attempting to return a stream from Twitter handlers with topic: "+ topic);
+
+        return twitter.stream('statuses/filter', { track: topic });
+    }
+
     return {
         getHtmlTweets: getHtmlTweets,
         getJsonTweets: getJsonTweets,
         getBreakingNews: getBreakingNews,
+        getStream: getStream,
        
     }
 }();
