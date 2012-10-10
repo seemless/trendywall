@@ -1,22 +1,25 @@
+<!DOCTYPE html>
 <html>
 <head>
   <title>G2 Real-Time Information Wall</title>
   <link type="text/css" href="/static/css/main.css" rel="stylesheet" />
   <link type="text/css" href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.1/themes/dark-hive/jquery-ui.css" rel="Stylesheet" />
-  
+
   <script type="text/javascript" src="//ajax.googleapis.com/ajax/libs/jquery/1.8.1/jquery.min.js"></script>
   <script type="text/javascript" src="//ajax.googleapis.com/ajax/libs/jqueryui/1.8.23/jquery-ui.min.js"></script>
   <script type="text/javascript" src="https://www.google.com/jsapi"></script>
+
   <script type="text/javascript" src="/static/js/d3.v2.min.js"></script>
   <script type="text/javascript" src="/static/js/d3.layout.cloud.js"></script>
   <script type="text/javascript" src="/static/js/doCloud.js"></script>
 
-  <script>
+  <script type="text/javascript" src="/static/js/layout.js"></script>
 
+  <script>
   var ge;
   google.load("earth", "1");
-  
-  var networkLink;    
+
+  var networkLink;
 
   function init() {
     google.earth.createInstance('map3d', initCB, failureCB);
@@ -25,172 +28,161 @@
   function initCB(instance) {
     ge = instance;
     ge.getWindow().setVisibility(true);
-    newPoint(ge,39.125,-76.788);
+    newPoint(ge, 39.125, -76.788);
   }
 
-  function failureCB(errorCode) {
-  }
+  function failureCB(errorCode) {}
 
+  //Everything in this functions runs immediately on load
+  $(function() {
+    var searchTerms = $("#searchTerms"),
+    allFields = $([]).add(searchTerms)
+    tips = $(".validateTips");
 
+    function updateTips(t) {
+      tips.text(t).addClass("ui-state-highlight");
+      setTimeout(function() {
+        tips.removeClass("ui-state-highlight", 1500);
+      }, 500);
+    }
 
-    //Everything in this functions runs immediately on load
-    $(function() {
-
-
-
-      var searchTerms = $( "#searchTerms" ),
-      allFields = $( [] ).add( searchTerms )
-      tips = $( ".validateTips" );
-
-      function updateTips( t ) {
-        tips
-        .text( t )
-        .addClass( "ui-state-highlight" );
-        setTimeout(function() {
-          tips.removeClass( "ui-state-highlight", 1500 );
-        }, 500 );
+    function checkLength(o, n, min, max) {
+      if(o.val().length > max || o.val().length < min) {
+        o.addClass("ui-state-error");
+        updateTips("Length of " + n + " must be between " + min + " and " + max + ".");
+        return false;
+      } else {
+        return true;
       }
+    }
 
-      function checkLength( o, n, min, max ) {
-        if ( o.val().length > max || o.val().length < min ) {
-          o.addClass( "ui-state-error" );
-          updateTips( "Length of " + n + " must be between " +
-            min + " and " + max + "." );
-          return false;
-        } else {
-          return true;
-        }
+    function checkRegexp(o, regexp, n) {
+      if(!(regexp.test(o.val()))) {
+        o.addClass("ui-state-error");
+        updateTips(n);
+        return false;
+      } else {
+        return true;
       }
+    }
 
-      function checkRegexp( o, regexp, n ) {
-        if ( !( regexp.test( o.val() ) ) ) {
-          o.addClass( "ui-state-error" );
-          updateTips( n );
-          return false;
-        } else {
-          return true;
-        }
-      }
+    $("#dialog-form").dialog({
+      autoOpen: false,
+      show: "fade",
+      hide: "fade",
+      height: 300,
+      width: 500,
+      modal: true,
+      buttons: {
+        "Submit": function() {
 
-      $( "#dialog-form" ).dialog({
-        autoOpen: false,
-        show: "fade",
-        hide: "fade",
-        height: 300,
-        width: 500,
-        modal: true,
-        buttons: {
-          "Submit": function() {
+          var bValid = true;
+          allFields.removeClass("ui-state-error");
 
-            var bValid = true;
-            allFields.removeClass( "ui-state-error" );
+          bValid = bValid && checkLength(searchTerms, "searchTerms", 2, 160);
 
-            bValid = bValid && checkLength( searchTerms, "searchTerms", 2, 160 );
+          bValid = bValid && checkRegexp(searchTerms, /^[a-z]([0-9a-z_])+$/i, "searchTerms may consist of a-z, 0-9, underscores, begin with a letter.");
 
-            bValid = bValid && checkRegexp( searchTerms, /^[a-z]([0-9a-z_])+$/i, "searchTerms may consist of a-z, 0-9, underscores, begin with a letter." );
-
-            if ( bValid ) {
-              searchTerms = $("#searchTerms").val();
-              $( this ).dialog( "close" );         
-              loadPage(searchTerms);
-              init();
-            }
-          },
+          if(bValid) {
+            searchTerms = $("#searchTerms").val();
+            $(this).dialog("close");
+            loadPage(searchTerms);
+            init();
+          }
         },
-        close: function() {
-          allFields.val( "" ).removeClass( "ui-state-error" );
-        }
-      });
-
-      $( "#dialog-form" ).dialog( "open" );
+      },
+      close: function() {
+        allFields.val("").removeClass("ui-state-error");
+      }
     });
 
+    $("#dialog-form").dialog("open");
+  });
+
+function newPoint(ge, lat, lon) {
+
+    // Create the placemark.
+    var placemark = ge.createPlacemark('');
+    placemark.setName("G2, Inc.");
+
+    // Define a custom icon.
+    var icon = ge.createIcon('');
+    icon.setHref('http://g2-inc.com/sites/all/themes/g2website/images/g2logo.png');
+    var style = ge.createStyle('');
+    style.getIconStyle().setIcon(icon);
+    style.getIconStyle().setScale(3.0);
+    placemark.setStyleSelector(style);
+
+    // Set the placemark's location.
+    var point = ge.createPoint('');
+    point.setLatitude(lat);
+    point.setLongitude(lon);
+    placemark.setGeometry(point);
+
+    // Add the placemark to Earth.
+    ge.getFeatures().appendChild(placemark);
+
+    // Get the current view.
+    var lookAt = ge.getView().copyAsLookAt(ge.ALTITUDE_RELATIVE_TO_GROUND);
+
+    // Set new latitude and longitude values.
+    lookAt.setLatitude(point.getLatitude());
+    lookAt.setLongitude(point.getLongitude());
+
+    //zoom speed and range
+    ge.getOptions().setFlyToSpeed(.5);
+    lookAt.setRange(500000.0)
+
+    // Update the initial view in Google Earth.
+    ge.getView().setAbstractView(lookAt);
+
+  }
+
+  /*
+      var searchTerms = [
+    ["internet"],["cybersecurity"],["hackers"],["hacking"],["hacktivism"],["scada"],["internet"],["information security"],["network security"],["sentiment analysis"],
+    ["information analysis"],["information visualization"],["security visualization"],["linux"],["java"],["c++"],["network sockets"],["0-day"],["0day"],
+    ["defcon"],["blackhat"],["computer virus"],["malware"],["information security professionals"],["military industial complex"]];
+    */
 
 
-function newPoint(ge,lat,lon){
 
-// Create the placemark.
-var placemark = ge.createPlacemark('');
-placemark.setName("G2, Inc.");
-
-// Define a custom icon.
-var icon = ge.createIcon('');
-icon.setHref('http://g2-inc.com/sites/all/themes/g2website/images/g2logo.png');
-var style = ge.createStyle('');
-style.getIconStyle().setIcon(icon);
-style.getIconStyle().setScale(3.0);
-placemark.setStyleSelector(style);
-
-// Set the placemark's location.  
-var point = ge.createPoint('');
-point.setLatitude(lat);
-point.setLongitude(lon);
-placemark.setGeometry(point);
-
-// Add the placemark to Earth.
-ge.getFeatures().appendChild(placemark);
-
-// Get the current view.
-var lookAt = ge.getView().copyAsLookAt(ge.ALTITUDE_RELATIVE_TO_GROUND);
-
-// Set new latitude and longitude values.
-lookAt.setLatitude(point.getLatitude());
-lookAt.setLongitude(point.getLongitude());
-
-//zoom speed and range
-ge.getOptions().setFlyToSpeed(.5);
-lookAt.setRange(500000.0)
-
-// Update the initial view in Google Earth.
-ge.getView().setAbstractView(lookAt);
-
-}
-
-    /*
-    var searchTerms = [
-  ["internet"],["cybersecurity"],["hackers"],["hacking"],["hacktivism"],["scada"],["internet"],["information security"],["network security"],["sentiment analysis"],
-  ["information analysis"],["information visualization"],["security visualization"],["linux"],["java"],["c++"],["network sockets"],["0-day"],["0day"],
-  ["defcon"],["blackhat"],["computer virus"],["malware"],["information security professionals"],["military industial complex"]];
-  */
+    function setNewTweet(query) {
+    //Time to pull in some geocoded tweets
+    //var currentHref = window.location.href.slice(0,-18);
+    //var href = currentHref+"/kml/"+query+'';
+    var href = 'http://50.116.22.120:3000/kml/' + query + '';
+    console.log(href);
 
 
+    networkLink = ge.createNetworkLink("");
+    networkLink.setDescription("NetworkLink open to fetched content");
+    networkLink.setName("Open NetworkLink");
+    networkLink.setFlyToView(true);
 
-  function setNewTweet(query){
-//Time to pull in some geocoded tweets
-//var currentHref = window.location.href.slice(0,-18);
-//var href = currentHref+"/kml/"+query+'';
-var href = 'http://50.116.22.120:3000/kml/'+query+'';
-console.log(href);
+    // create a Link object
+    var link = ge.createLink("");
+    link.setHref(href);
 
+    // attach the Link to the NetworkLink
+    networkLink.setLink(link);
 
-networkLink = ge.createNetworkLink("");
-networkLink.setDescription("NetworkLink open to fetched content");
-networkLink.setName("Open NetworkLink");
-networkLink.setFlyToView(true);  
-
-// create a Link object
-var link = ge.createLink("");
-link.setHref(href);
-
-// attach the Link to the NetworkLink
-networkLink.setLink(link);
-
-// add the NetworkLink feature to Earth
-ge.getFeatures().appendChild(networkLink);
-}
+    // add the NetworkLink feature to Earth
+    ge.getFeatures().appendChild(networkLink);
+  }
 
 
-function loadPage(searchTerms){
+  function loadPage(searchTerms) {
     //flickrTerms can be a comma separated list
     flickrTerms = searchTerms;
     flickrTagMode = "all";
-    flickrUrl = "./flickr/"+flickrTerms+"/"+flickrTagMode;
+    flickrUrl = "./flickr/" + flickrTerms + "/" + flickrTagMode;
 
 
     $(".dragStar").draggable();
     $(".resizeStar").resizable();
     $("#storeNews").load("./googleTopWorldNews");
-    $("#tweets").load("./tweets/"+searchTerms+"");
+    $("#tweets").load("./tweets/" + searchTerms + "");
     $("#gohere").load("./twitter-earth");
     $("#news marquee").load("./news");
 
@@ -200,151 +192,139 @@ function loadPage(searchTerms){
     google.setOnLoadCallback(init);
 
 
-    $("#tweetTitle").html("Live "+searchTerms+" Tweets");
-    $("#imagesTitle").html(searchTerms+" Images");
+    $("#tweetTitle").html("Live " + searchTerms + " Tweets");
+    $("#imagesTitle").html(searchTerms + " Images");
 
-// *************SLIDESHOWS**********************
-setInterval( function() {
-  var $active = $('#slideshow IMG.active');
+    // *************SLIDESHOWS**********************
+    setInterval(function() {
+      var $active = $('#slideshow IMG.active');
 
-  if ( $active.length == 0 ) $active = $('#slideshow IMG:last');
+      if($active.length == 0) $active = $('#slideshow IMG:last');
 
-    // use this to pull the images in the order they appear in the markup
-    var $next =  $active.next().length ? $active.next()
-    : $('#slideshow IMG:first');
+      // use this to pull the images in the order they appear in the markup
+      var $next = $active.next().length ? $active.next() : $('#slideshow IMG:first');
 
-    // uncomment the 3 lines below to pull the images in random order
+      // uncomment the 3 lines below to pull the images in random order
+      // var $sibs  = $active.siblings();
+      // var rndNum = Math.floor(Math.random() * $sibs.length );
+      // var $next  = $( $sibs[ rndNum ] );
+      $active.addClass('last-active');
 
-    // var $sibs  = $active.siblings();
-    // var rndNum = Math.floor(Math.random() * $sibs.length );
-    // var $next  = $( $sibs[ rndNum ] );
-
-
-    $active.addClass('last-active');
-
-    $next.css({opacity: 0.0})
-    .addClass('active')
-    .css("max-width", $('#slideshow').width())
-    .css("max-height", $('#slideshow').height())
-    .animate({opacity: 1.0}, 1000, function() {
-      $active.removeClass('active last-active');
-    });
-    $active.hide();
-    $next.show();
-  }, 10000 );
+      $next.css({
+        opacity: 0.0
+      }).addClass('active').css("max-width", $('#slideshow').width()).css("max-height", $('#slideshow').height()).animate({
+        opacity: 1.0
+      }, 1000, function() {
+        $active.removeClass('active last-active');
+      });
+      // $active.hide();
+      // $next.show();
+    }, 10000);
 
 
 
-        //refresh tweeties every 120 seconds  (in the future we'll probably want to do multiple pages per refresh to ensure no duplicare reloads.)
-        setInterval(function() {
-         $("#tweets").fadeOut();
-         $("#tweets").load("./tweets/"+searchTerms+"");
-         $("#tweets").fadeIn();
-       }, 120000);
+    //refresh tweeties every 120 seconds  (in the future we'll probably want to do multiple pages per refresh to ensure no duplicare reloads.)
+    setInterval(function() {
+      $("#tweets").fadeOut();
+      $("#tweets").load("./tweets/" + searchTerms + "");
+      $("#tweets").fadeIn();
+    }, 120000);
 
-        setInterval(function() {
-          $("#news marquee").load("./news");
-          //$("#news").marquee();
-          
-        }, 120000);
+    setInterval(function() {
+      $("#news marquee").load("./news");
+      //$("#news").marquee();
+    }, 120000);
 
 
-  //pull in our initial google earth tweet after 4 seconds
-//  setTimeout(function() {
-  //      setNewTweet(searchTerms);
+    //pull in our initial google earth tweet after 4 seconds
+    //  setTimeout(function() {
+    //      setNewTweet(searchTerms);
     //    }, 4000);
+    setTimeout(function() {
+      $("#storeNews").load("./googleTopWorldNews", function() {});
+      $("#googleNews").fadeOut();
+      $("#googleNews").html('');
+      $("#s_INTERESTING").clone().appendTo($("#googleNews"));
+      $("#s_POPULAR").clone().appendTo($("#googleNews"));
+      $("#googleNews").fadeIn();
+    }, 4000);
 
-setTimeout(function() {
-  $("#storeNews").load("./googleTopWorldNews", function(){
-      $(".gadget").toggleClass("ui-widget-reset ui-widget ui-widget-content").removeClass(".gadget");
-      $(".basic-title").toggleClass("ui-widget-header").removeClass("basic-title");
-      $(".sub-title").after("<br/>");
+
+    //pull in new google earth tweet every 30 seconds (without authenticating we can only do about 1 request every 24 seconds)
+    setInterval(function() {
+      setNewTweet(searchTerms)
+    }, 10000);
+
+
+    //refresh google news every 1 hour
+    setInterval(function() {
+      $("#storeNews").load("http://news.google.com/news/section?pz=1&cf=all&ned=us&topic=w&output=html", function() {
+
+      });
+      $("#googleNews").fadeOut();
+      $("#googleNews").html('');
+      $("#s_INTERESTING").clone().appendTo($("#googleNews"));
+      $("#s_POPULAR").clone().appendTo($("#googleNews"));
+      $("#googleNews").fadeIn();
+
+    }, 600000);
+  }
+
+  $(window).load(function() {
+    doCloud();
   });
-  $("#googleNews").fadeOut();
-  $("#googleNews").html('');
-  $("#s_INTERESTING").clone().appendTo($("#googleNews"));
-  $("#s_POPULAR").clone().appendTo($("#googleNews"));
-  $("#googleNews").fadeIn();
-}, 4000);
-
-
-  //pull in new google earth tweet every 30 seconds (without authenticating we can only do about 1 request every 24 seconds)
-  setInterval( function(){
-    setNewTweet(searchTerms)
-  } , 10000);
-
-
-  //refresh google news every 1 hour
-  setInterval(function() {
-    $("#storeNews").load("http://news.google.com/news/section?pz=1&cf=all&ned=us&topic=w&output=html", function(){
-
-    });
-    $("#googleNews").fadeOut();
-    $("#googleNews").html('');
-    $("#s_INTERESTING").clone().appendTo($("#googleNews"));
-    $("#s_POPULAR").clone().appendTo($("#googleNews"));
-    $("#googleNews").fadeIn();
-
-  }, 600000);
-}
-
-  $(window).load(function(){
-    doCloud();  
-  });
-
   // Update WordCloud every 10 minutes
-  setInterval(doCloud(), 30*1000);
-  
-  
-  </script>
+  setInterval(doCloud(), 30 * 1000);
+
+</script>
 
 </head>
 <body style="background-color: black;">
-  <div id="level1top" style="height: 90%;">
-    <div id="level2left" style="float: left; width: 20%; height: 100%;">
-      <div class="content-wrapper">
-        <div id="googleNews"></div>
-      </div>
+  <div id="level1top" style="">
+    <div id="level2left" style="float: left;">
+        <div id="googleNews" class="content-wrapper"></div>
     </div>
-    <div id="level2center" style="float: left; width: 60%;">
-      <div id="level3top" style="height: 50%; width: 100%;">
-        
-          <div id="map3d"></div>
-        
+    <div id="level2middle" style="float: left;">
+      <div id="level3top" style="">
+
+        <div id="map3d" class="content-wrapper"></div>
+
       </div>
-      <div id="level3bottom" style="height: 50%; width: 100%;">
-        <div id="level4left" style="float: left; width: 50%;">
-          <div id="slideshow" style="overflow: hidden; width: 100%; height: 100%;" class="ui-widget-content"></div>
+      <div id="level3bottom" style="">
+        <div id="level4left" style="float: left;">
+          <div id="slideshow" class="content-wrapper"></div>
         </div>
-        <div id="level4right" style="float: left; width: 50%; height: 100%;">
-          <div id="wordcloud" style="width: 100%; height: 100%;" class="ui-widget-content"></div>
+        <div id="level4right" style="float: left;">
+          <div id="wordcloud" class="content-wrapper"></div>
         </div>
       </div>
     </div>
-    <div id="level2right" style="float: right; width: 19.8%; height: 100%;">
-      <div id="tweets" class="ui-widget-content"></div>
+    <div id="level2right" style="float: right;">
+      <div id="tweets" class="content-wrapper"></div>
     </div>
   </div>
-  <div id="level1bottom" style="height: 10%;" class="ui-widget-content">
-    <div style="padding-left:2px; padding-top:2px; float:left;"><span style="color:#dd3333; font-size:16; font-weight:bold;">#Breaking News</span></div>
-    <div id="news" style="font-size:20; float:right;"><marquee behavior="scroll" direction="left" scrollamount="8" height=10px width="98%"></marquee></div>  
+  <div id="level1bottom" style="" class="content-wrapper">
+    <div style="">
+      <span style="color:#dd3333; font-size:x-large; font-weight:bold; position: relative; top: 10px;">#Breaking News</span>
+    </div>
+      <div id="news" style="float:right;"><marquee behavior="scroll" direction="left" scrollamount="8"></marquee></div>
   </div>
 
-<!-- Hidden Divs -->
-<div id="storeNews" style="visibility:hidden; height:1px; width:1px;"></div>
-<div id="hidden" style="width: 25%; float: left; padding: 10px; visibility:hidden;">
-  <div id="googleTrends"></div>
-</div>
-<div id="dialog-form" title="Areas of Interest">
-  <p class="validateTips"><!--Use commas between multiple interests--></p>
+  <!-- Hidden Divs -->
+  <div id="storeNews" style="visibility:hidden; height:1px; width:1px;"></div>
+  <div id="hidden" style="width: 25%; float: left; padding: 10px; visibility:hidden;">
+    <div id="googleTrends"></div>
+  </div>
+  <div id="dialog-form" title="Areas of Interest">
+    <p class="validateTips"><!--Use commas between multiple interests--></p>
 
-  <form>
-    <fieldset>
-      <label for="searchTerms">Enter Interest</label>
-      <input type="text" name="searchTerms" id="searchTerms" class="text ui-widget-content ui-corner-all" />
-    </fieldset>
-  </form>
-</div>
+    <form>
+      <fieldset>
+        <label for="searchTerms">Enter Interest</label>
+        <input type="text" name="searchTerms" id="searchTerms" class="text ui-widget-content ui-corner-all" />
+      </fieldset>
+    </form>
+  </div>
 
 
 </body>

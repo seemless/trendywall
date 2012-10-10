@@ -1,0 +1,40 @@
+/* Global Styles */
+body {
+  background: black;
+  overflow: hidden;
+  font-family: "Helvetica", "Arial", "Arial Narrow", sans-serif;
+}
+
+label, input { display:block; }
+
+h1 {
+  font-size: large;
+  margin: 0;
+}
+
+.content-wrapper {
+  overflow: hidden;
+  border: 1px solid #555555;
+  height: 100%;
+  background: #000000 url(http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.1/themes/dark-hive/images/ui-bg_loop_25_000000_21x21.png) 50% 50% repeat;
+  color: #FFFFFF;
+}
+
+
+
+/* --- Slideshow --- */
+
+#slideshow img {
+  display: none;
+  margin: auto;
+  margin-top: 5%;
+  width: 90%;
+  height: 90%;
+}
+
+#slideshow IMG.active {
+  display: block;
+}
+
+#slideshow IMG.last-active {
+}

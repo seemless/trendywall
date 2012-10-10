@@ -3,120 +3,130 @@ var app = express();
 var twit = require("twit");
 var tconf = require("./conf/twitconf"); //config file for twitter
 var request = require("request"); //for doing http gets.. in this case to get google top 10
-var twitter = new twit(tconf.getConf())
+var twitter = new twit(tconf.getConf());
 var Flickr = require('flickr').Flickr;
 var fconf = require("./conf/flickrconf");
 var flickrKey = fconf.getConf()['consumer_key'];
 var flickrSecret = fconf.getConf()['consumer_sercret'];
-var flickr= new Flickr(flickrKey, flickrSecret);
-var glossary = require("glossary")({verbose: true, collapse: true, minFreq: 2});
+var flickr = new Flickr(flickrKey, flickrSecret);
+var glossary = require("glossary")({
+    verbose: true,
+    collapse: true,
+    minFreq: 2
+});
 var FeedParser = require('feedparser');
 var async = require('async');
 var cheerio = require('cheerio');
 
 //I guess this is the only way to include client side scripts and css?
 //they would go here
-
 // Serve static files
 app.use("/static", express.static(__dirname + '/static'));
 
 // route routing is very easy with express, this will handle the request for root directory contents.
 // :id is used here to pattern match with the first value after the forward slash.
-app.get("/googleTop10Trends",function(req,res)
-    {
-        request('http://www.google.com/trends/hottrends/atom/hourly', function (error, response, body) {
-        if (!error && response.statusCode == 200) {
-         res.end(body) // Print the google web page.
-              }
-          })
+app.get("/googleTop10Trends", function(req, res) {
+    request('http://www.google.com/trends/hottrends/atom/hourly', function(error, response, body) {
+        if(!error && response.statusCode == 200) {
+            res.end(body); // Print the google web page.
+        }
     });
-    
-    
-app.get("/googleTopWorldNews",function(req,res)
-    {
-        request('http://news.google.com/news/section?pz=1&cf=all&ned=us&topic=w&output=html', function (error, response, body) {
-        if (!error && response.statusCode == 200) {
-         res.end(body) // Print the google world news webpage
-            }
-        })
-    });
-   
-    
-app.get("/googleTopTechNews",function(req,res)
-    {
-        request('http://news.google.com/news?pz=1&cf=all&ned=us&hl=en&topic=tc&output=html', function (error, response, body) {
-        if (!error && response.statusCode == 200) {
-         res.end(body) // Print the google tech news webpage
-            }
-        })
-    });
+});
 
-app.get("/tweets/:query",function(req,res)
-    {
-            twitter.get('search', { q: req.params["query"], result_type: 'recent', geocode:"39.4,-76.6,1000mi", lang: 'en', page:1, rpp:12 }, function(err, reply) {
-          if (err!==null){
-                console.log("Errors:",err);
-            }
-            else{
+
+app.get("/googleTopWorldNews", function(req, res) {
+    request('http://news.google.com/news/section?pz=1&cf=all&ned=us&topic=w&output=html', function(error, response, body) {
+        if(!error && response.statusCode == 200) {
+            res.end(body); // Print the google world news webpage
+        }
+    });
+});
+
+
+app.get("/googleTopTechNews", function(req, res) {
+    request('http://news.google.com/news?pz=1&cf=all&ned=us&hl=en&topic=tc&output=html', function(error, response, body) {
+        if(!error && response.statusCode == 200) {
+            res.end(body); // Print the google tech news webpage
+        }
+    });
+});
+
+app.get("/tweets/:query", function(req, res) {
+    twitter.get('search', {
+        q: req.params["query"],
+        result_type: 'recent',
+        geocode: "39.4,-76.6,1000mi",
+        lang: 'en',
+        page: 1,
+        rpp: 12
+    }, function(err, reply) {
+        if(err !== null) {
+            console.log("Errors:", err);
+        } else {
             var tweetToHTML = "";
-            for (key in reply.results){
-      
-                
-tweetToHTML += "<div style='border-bottom:1px solid #777; padding-bottom:10px; display:block; position:relative;'>\
-                <a class><img width='48' height='48' src='"+reply.results[key].profile_image_url+"' style='float:left; background: black; border-top: 1px solid #333;\
+            for(var key in reply.results) {
+
+
+                tweetToHTML += "<div style='border-bottom:1px solid #777; padding-bottom:10px; display:block; position:relative;'>\
+                <a class><img width='48' height='48' src='" + reply.results[key].profile_image_url + "' style='float:left; background: black; border-top: 1px solid #333;\
                 border-left: 1px solid #333; border-bottom: 1px solid #666; border-right: 1px solid #666;'/></a>\
-                <div style='display:block; margin-left:60px;'><p>"+reply.results[key].text+"</p>\
-                <b>"+reply.results[key].from_user+"</b> - "+reply.results[key].location+"</div>\
+                <div style='display:block; margin-left:60px;'><p>" + reply.results[key].text + "</p>\
+                <b>" + reply.results[key].from_user + "</b> - " + reply.results[key].location + "</div>\
                 </div>";
-            
+
             }
             res.end(tweetToHTML);
-            }
-            
-        });           
-    });
-    
-//we'll use this to send the most recent tweet with the mentioned query and return the result as a kml file
-app.get("/kml/:query",function(req,res)
-{
-    var randomTweetNumber = Math.floor(Math.random()*80);
-    //var randomTweetPage = Math.floor(Math.random()*8);
-    twitter.get('search', { q: req.params["query"], result_type: 'mixed', geocode:"39.4,-76.6,10000mi", lang: 'en', page:1, rpp:80 }, function(err, reply) {
-    if (err!==null || reply ==null){
-            console.log("Errors:",err);
         }
-        else{
-    try{
-	//console.log("Random GeoTweet Page#"+randomTweetPage);
-	console.log("Random GeoTweet#"+randomTweetNumber);
-        var name = reply.results[randomTweetNumber].from_user;
-        var description = reply.results[randomTweetNumber].text;
-        var place = reply.results[randomTweetNumber].location;
-        var placeNormalized = place; //if google provides a normalized address it will be set here, otherwise its just what the twitter user reported
-        var time = reply.results[randomTweetNumber].created_at;
-        var img = reply.results[randomTweetNumber].profile_image_url;
-        var lat = "";
-        var lng = "";
-        var coordinates = "";       
-        var resultsJSON = {};
-        
-        //we're checking each location against the google web decoder
-         //https://maps.googleapis.com/maps/api/geocode/json?address=TWITLOCATION&sensor=false
-         if(place != null && place != ''){
-        request('https://maps.googleapis.com/maps/api/geocode/json?address='+place+'&sensor=false', function (error, response, body) {
-            var strjson = ""+body+"";
-            resultsJSON = JSON.parse(strjson);
-            if (resultsJSON.status == 'OK'){
-            lat = resultsJSON.results[0].geometry.location.lat;
-            lng = resultsJSON.results[0].geometry.location.lng;
-            coordinates = lng+","+lat+",0";
-            placeNormalized = resultsJSON.results[0].formatted_address;
-           
-            var kml = '<?xml version="1.0" encoding="UTF-8"?>\
+
+    });
+});
+
+//we'll use this to send the most recent tweet with the mentioned query and return the result as a kml file
+app.get("/kml/:query", function(req, res) {
+    var randomTweetNumber = Math.floor(Math.random() * 80);
+    //var randomTweetPage = Math.floor(Math.random()*8);
+    twitter.get('search', {
+        q: req.params["query"],
+        result_type: 'mixed',
+        geocode: "39.4,-76.6,10000mi",
+        lang: 'en',
+        page: 1,
+        rpp: 80
+    }, function(err, reply) {
+        if(err !== null || reply === null) {
+            console.log("Errors:", err);
+        } else {
+            try {
+                //console.log("Random GeoTweet Page#"+randomTweetPage);
+                console.log("Random GeoTweet#" + randomTweetNumber);
+                var name = reply.results[randomTweetNumber].from_user;
+                var description = reply.results[randomTweetNumber].text;
+                var place = reply.results[randomTweetNumber].location;
+                var placeNormalized = place; //if google provides a normalized address it will be set here, otherwise its just what the twitter user reported
+                var time = reply.results[randomTweetNumber].created_at;
+                var img = reply.results[randomTweetNumber].profile_image_url;
+                var lat = "";
+                var lng = "";
+                var coordinates = "";
+                var resultsJSON = {};
+
+                //we're checking each location against the google web decoder
+                //https://maps.googleapis.com/maps/api/geocode/json?address=TWITLOCATION&sensor=false
+                if(place !== null && place !== '') {
+                    request('https://maps.googleapis.com/maps/api/geocode/json?address=' + place + '&sensor=false', function(error, response, body) {
+                        var strjson = "" + body + "";
+                        resultsJSON = JSON.parse(strjson);
+                        if(resultsJSON.status == 'OK') {
+                            lat = resultsJSON.results[0].geometry.location.lat;
+                            lng = resultsJSON.results[0].geometry.location.lng;
+                            coordinates = lng + "," + lat + ",0";
+                            placeNormalized = resultsJSON.results[0].formatted_address;
+
+                            var kml = '<?xml version="1.0" encoding="UTF-8"?>\
             <kml xmlns="http://earth.google.com/kml/2.2" xmlns:gx="http://www.google.com/kml/ext/2.2">\
             <Document>\
             <Style id="My_Style">\
-            <IconStyle><scale>1.8</scale><Icon><href>'+img+'</href></Icon></IconStyle>\
+            <IconStyle><scale>1.8</scale><Icon><href>' + img + '</href></Icon></IconStyle>\
             <BalloonStyle>\
             <bgColor>00eeeeee</bgColor> <textColor>000000</textColor>\
             <text><![CDATA[ $[name] <HR> $[description]\
@@ -124,142 +134,154 @@ app.get("/kml/:query",function(req,res)
             </BalloonStyle>\
             </Style>\
             <Placemark>\
-            <name>'+placeNormalized+'</name>\
+            <name>' + placeNormalized + '</name>\
             <LookAt>\
-                <longitude>'+lng+'</longitude>\
-                <latitude>'+lat+'</latitude>\
+                <longitude>' + lng + '</longitude>\
+                <latitude>' + lat + '</latitude>\
                 <altitude>0</altitude>\
                 <range>6000000</range>\
             </LookAt>\
             <description><![CDATA[\
-            <table width="400" height="100"><tr><td><img src="'+img+'"/></td>\
-            <td><span style="font-size:16px;"><b>'+name+'</b>:'+description+'</span></td></tr>\
-            <tr><span style="font-size:12px;">Posted from '+place+' - '+time+'</span></tr>\
+            <table width="400" height="100"><tr><td><img src="' + img + '"/></td>\
+            <td><span style="font-size:16px;"><b>' + name + '</b>:' + description + '</span></td></tr>\
+            <tr><span style="font-size:12px;">Posted from ' + place + ' - ' + time + '</span></tr>\
             </table>]]>\
             </description>\
             <gx:balloonVisibility>1</gx:balloonVisibility>\
             <styleUrl>#My_Style</styleUrl>\
             <Point>\
-                <coordinates>'+coordinates+'</coordinates>\
+                <coordinates>' + coordinates + '</coordinates>\
             </Point>\
             </Placemark>\
             </Document>\
             </kml>';
-        
-	console.log(kml);
-            res.writeHead(200, {
-            "Content-Type": "application/xml",
-            "Access-Control-Allow-Origin": "*"
-            });
-            
-            res.end(kml);
-            }
-        })    
-        }else {
-            res.writeHead(500);
-            res.end(error);
-        }
-      
-    }
-    catch(err){
-        console.log(err);
-    }
-        }
-    });
-});   
-    
 
-app.get("/news", function(req,res)
-    {   
-        twitter.get('search', { q: "BreakingNews", result_type: 'recent', lang: 'en', page:1, rpp:8 }, function(err, reply) {
-            if (err!==null){
-                console.log("Errors:",err);
-            }
-            else{
-                var tweetToHTML = "";
-                for (key in reply.results){
-                    tweetToHTML += "@"+reply.results[key].from_user +": "+reply.results[key].text+"... ";
+                            console.log(kml);
+                            res.writeHead(200, {
+                                "Content-Type": "application/xml",
+                                "Access-Control-Allow-Origin": "*"
+                            });
+
+                            res.end(kml);
+                        }
+                    });
+                } else {
+                    res.writeHead(500);
+                    res.end(error);
                 }
-                //tweetToHTML += "</p>";
-                res.end(tweetToHTML);
+
+            } catch(err) {
+                console.error(err);
             }
-        });
+        }
+    });
+});
 
-    });    
 
-app.get("/trendywall",function(req,res)
-    {
-          res.render("trendywall.ejs", { layout: false });
+app.get("/news", function(req, res) {
+    twitter.get('search', {
+        q: "BreakingNews",
+        result_type: 'recent',
+        lang: 'en',
+        page: 1,
+        rpp: 8
+    }, function(err, reply) {
+        if(err !== null) {
+            console.log("Errors:", err);
+        } else {
+            var tweetToHTML = "";
+            for(var key in reply.results) {
+                tweetToHTML += "@" + reply.results[key].from_user + ": " + reply.results[key].text + "... ";
+            }
+            //tweetToHTML += "</p>";
+            res.end(tweetToHTML);
+        }
     });
 
+});
 
-app.get("/flickr/:query/:tagMode", function(req,res)
-	{
-	var pixel_map = {"s":"75","q":"150","t":"100","m":"240","n":"320",
-			"-":"500","z":"640","c":"800","b":"1024","o":"500"};
-			
-	var mode = req.params['tagMode'];
-	console.log("mode:" + mode);
-	//Only valid tag_modes are 'any' or 'all', default to 'any'
-	if (mode !== "all" || mode !== "any"){
-		mode = "any";
-	}
+app.get("/trendywall", function(req, res) {
+    res.render("trendywall.ejs", {
+        layout: false
+    });
+});
 
-	var query = encodeURIComponent(req.params['query'].replace(","," "));
-	console.log(query);
-	flickr.executeAPIRequest("flickr.photos.search",{tags:query,tag_mode:mode},true, function(err, reply){
-                
-		if(err!==null){
-			console.log("errors in getting flickr photos"+err);
-		}
-		else{
-			var picsToHTML = '';
-			var imgTagBeg = "<img src='"
-			var imgTagEndOne = "' class='active' />";
-			var imgTagEngOther = "' />";
-			var i = 0;
-			if (reply.photos.total < 100){
-				i = reply.photos.total;
-			}
-			else{
-				i = 100;
-			} 
-			for(var k=0; k<i; k++){
-			//http://farm{farm-id}.staticflickr.com/{server-id}/{id}_{secret}.jpg
-				var p = reply.photos.photo[k];
-				var title = p.title;
-				var src = "http://farm"+p.farm+".staticflickr.com/"+p.server+"/"+p.id+"_"+p.secret+".jpg";
-				if (k == 1){
-					picsToHTML += imgTagBeg + src + imgTagEndOne;		
-				}
-				else{
-					picsToHTML += imgTagBeg + src + imgTagEngOther;
-				}
-			}
-			if(!picsToHTML){
-				picsToHTML = "<p>No photos were found matching your query.</p>"
-			}
-			//console.log(picsToHTML);
-			res.end(picsToHTML);
-		}
-	});
+
+app.get("/flickr/:query/:tagMode", function(req, res) {
+    var pixel_map = {
+        "s": "75",
+        "q": "150",
+        "t": "100",
+        "m": "240",
+        "n": "320",
+        "-": "500",
+        "z": "640",
+        "c": "800",
+        "b": "1024",
+        "o": "500"
+    };
+
+    var mode = req.params['tagMode'];
+    console.log("mode:" + mode);
+    //Only valid tag_modes are 'any' or 'all', default to 'any'
+    if(mode !== "all" || mode !== "any") {
+        mode = "any";
+    }
+
+    var query = encodeURIComponent(req.params['query'].replace(",", " "));
+    console.log(query);
+    flickr.executeAPIRequest("flickr.photos.search", {
+        tags: query,
+        tag_mode: mode
+    }, true, function(err, reply) {
+
+        if(err !== null) {
+            console.log("errors in getting flickr photos" + err);
+        } else {
+            var picsToHTML = '';
+            var imgTagBeg = "<img src='";
+            var imgTagEndOne = "' class='active' style='display: none;'/>";
+            var imgTagEngOther = "' />";
+            var i = 0;
+            if(reply.photos.total < 100) {
+                i = reply.photos.total;
+            } else {
+                i = 100;
+            }
+            for(var k = 0; k < i; k++) {
+                //http://farm{farm-id}.staticflickr.com/{server-id}/{id}_{secret}.jpg
+                var p = reply.photos.photo[k];
+                var title = p.title;
+                var src = "http://farm" + p.farm + ".staticflickr.com/" + p.server + "/" + p.id + "_" + p.secret + ".jpg";
+                if(k == 1) {
+                    picsToHTML += imgTagBeg + src + imgTagEndOne;
+                } else {
+                    picsToHTML += imgTagBeg + src + imgTagEngOther;
+                }
+            }
+            if(!picsToHTML) {
+                picsToHTML = "<p>No photos were found matching your query.</p>";
+            }
+            //console.log(picsToHTML);
+            res.end(picsToHTML);
+        }
+    });
 });
 
 // Word Cloud Word Generation
-app.get("/getWordcloudWords", function(req, res){
+app.get("/getWordcloudWords", function(req, res) {
     res.type("text/plain");
 
     var textStringsArray = []; // Text to make the wordcloud from
-    var feeds = [
-        'http://english.aljazeera.net/Services/Rss/?PostingId=2007731105943979989', // Aljazeera English
+    var feeds = ['http://english.aljazeera.net/Services/Rss/?PostingId=2007731105943979989' // Aljazeera English
     ];
 
-    function parseFeed(d, callback){
+    function parseFeed(d, callback) {
         var parser = new FeedParser();
-        parser.parseUrl(d, function(error, meta, articles){
-            if(!error){
+        parser.parseUrl(d, function(error, meta, articles) {
+            if(!error) {
                 var out = "";
-                for(var a in articles){
+                for(var a in articles) {
                     out += " " + articles[a].description + " " + articles[a].summary + " " + articles[a].title;
                 }
 
@@ -268,36 +290,35 @@ app.get("/getWordcloudWords", function(req, res){
 
                 // Done.
                 callback(null, out);
-            }
-            
-            else{
+            } else {
                 console.error(error);
                 callback(error, null);
             }
         });
     }
 
-    async.forEach(feeds, parseFeed, function(err){
-        if(err){
+    async.forEach(feeds, parseFeed, function(err) {
+        if(err) {
             console.error(err);
             res.end();
         } else {
             var s = "";
-            for(i in textStringsArray){ s += textStringsArray[i]; }
-
+            for(var i in textStringsArray) {
+                s += textStringsArray[i];
+            }
 
 
             // Use Glossary to pick out important words & count them.
             var words = glossary.extract(s.toLowerCase());
-            words.sort(function(a,b){
-                return b.count-a.count;
+            words.sort(function(a, b) {
+                return b.count - a.count;
             });
 
             // Return.
             res.end(JSON.stringify(words));
         }
     });
-    
+
 });
 
 //process.env.PORT is a cloud9 thing. Use your own port (ex 9999) if on a normal platform.

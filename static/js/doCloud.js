@@ -2,10 +2,11 @@ function doCloud(){
   var w = $("div#wordcloud").width();
   var h = $("div#wordcloud").height();
 
-  if(w == null | h == null){
+  if(w === null | h === null){
     return;
   }
 
+  console.log(w, h);
   $.getJSON("/getWordcloudWords", function(data, text, obj){
       var fontSize = d3.scale.log().range([10, 100]);
       var layout = d3.layout.cloud()
@@ -25,8 +26,9 @@ function doCloud(){
         d3.select("#wordcloud").append("svg")
         .attr("width", w)
         .attr("height", h)
+        .style("background", "black")
         .append("g")
-        .attr("transform", "translate(" + w/2 + "," + h/2 + ")")
+        .attr("transform", "translate(" + w/2 + "," + (h/2 + 5) + ")")
         .selectAll("text")
         .data(words)
         .enter().append("text")
