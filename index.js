@@ -29,61 +29,6 @@ app.get('/ozone/breakingNews', ozone.breakingNews);
 app.get('/ozone/streamTweets/:topic', ozone.streamTweets);
 
 
-// route routing is very easy with express, this will handle the request for root directory contents.
-// :id is used here to pattern match with the first value after the forward slash.
-app.get("/googleTop10Trends",function(req,res)
-    {
-        request('http://www.google.com/trends/hottrends/atom/hourly', function (error, response, body) {
-        if (!error && response.statusCode == 200) {
-         res.end(body) // Print the google web page.
-              }
-          })
-    });
-    
-    
-app.get("/googleTopWorldNews",function(req,res)
-    {
-        request('http://news.google.com/news/section?pz=1&cf=all&ned=us&topic=w&output=html', function (error, response, body) {
-        if (!error && response.statusCode == 200) {
-         res.end(body) // Print the google world news webpage
-            }
-        })
-    });
-   
-    
-app.get("/googleTopTechNews",function(req,res)
-    {
-        request('http://news.google.com/news?pz=1&cf=all&ned=us&hl=en&topic=tc&output=html', function (error, response, body) {
-        if (!error && response.statusCode == 200) {
-         res.end(body) // Print the google tech news webpage
-            }
-        })
-    });
-
-app.get("/tweets/:query",function(req,res)
-    {
-            twitter.get('search', { q: req.params["query"], result_type: 'mixed', geocode:"39.4,-76.6,1000mi", lang: 'en', page:1, rpp:12 }, function(err, reply) {
-          if (err!==null){
-                console.log("Errors:",err);
-            }
-            else{
-            var tweetToHTML = "";
-            for (key in reply.results){
-      
-                
-tweetToHTML += "<div style='border-bottom:1px solid #777; padding-bottom:10px; display:block; position:relative;'>\
-                <a class><img width='48' height='48' src='"+reply.results[key].profile_image_url+"' style='float:left; background: black; border-top: 1px solid #333;\
-                border-left: 1px solid #333; border-bottom: 1px solid #666; border-right: 1px solid #666;'/></a>\
-                <div style='display:block; margin-left:60px;'><p>"+reply.results[key].text+"</p>\
-                <b>"+reply.results[key].from_user+"</b> - "+reply.results[key].location+"</div>\
-                </div>";
-            
-            }
-            res.end(tweetToHTML);
-            }
-            
-        });           
-    });
     
 //we'll use this to send the most recent tweet with the mentioned query and return the result as a kml file
 app.get("/kml/:query",function(req,res)
@@ -177,26 +122,6 @@ app.get("/kml/:query",function(req,res)
     });
 });   
     
-
-  
-
-app.get("/news", function(req,res)
-    {   
-        twitter.get('search', { q: "BreakingNews", result_type: 'recent', lang: 'en', page:1, rpp:8 }, function(err, reply) {
-            if (err!==null){
-                console.log("Errors:",err);
-            }
-            else{
-                var tweetToHTML = "";
-                for (key in reply.results){
-                    tweetToHTML += "@"+reply.results[key].from_user +": "+reply.results[key].text+"... ";
-                }
-                //tweetToHTML += "</p>";
-                res.end(tweetToHTML);
-            }
-        });
-
-    });    
 
 app.get("/trendywall",function(req,res)
     {
