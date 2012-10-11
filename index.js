@@ -53,6 +53,8 @@ app.get("/googleTopTechNews", function(req, res) {
     });
 });
 
+var latestGeoTweet = null;
+
 app.get("/tweets/:query", function(req, res){
     // Setup an Event-Stream to Client
     res.writeHead(200, {
@@ -65,10 +67,13 @@ app.get("/tweets/:query", function(req, res){
     // Build the connection to Twitter & serve Tweets to CLient
     console.log("Twitter Stream Started");
     var tStream = twit.stream('statuses/filter', { track: req.params["query"] }, function(stream){
+        // Used to rate-limit sending of events to the client.
+        var sentRecently = false;
+
         stream.on('error', function(data, details){
             console.log(data, details);
         });
-    
+
         // If we lose the connection to the client, stop pulling tweets & end processing for this "app.get";
         req.on("close", function(){
             console.log("Got Browser Close Event");
@@ -78,14 +83,26 @@ app.get("/tweets/:query", function(req, res){
 
         stream.on('data', function(t){
             if(t.text){
-                var smallTweet = {
-                    "user": t.user.name,
-                    "img_url": t.user.profile_image_url,
-                    "coordinates": t.coordinates,
-                    "text": t.text
-                };
-                console.log(smallTweet);
-                res.write("data: " + JSON.stringify(smallTweet)+ '\n\n');
+                if(t.coordinates){
+                    latestGeoTweet = t;
+                }
+                if(!sentRecently){
+                    // Only compile the information we need to send
+                    // (Tweet objects are huge!)
+                    var smallTweet = {
+                        "user": t.user.name,
+                        "img_url": t.user.profile_image_url,
+                        "coordinates": t.coordinates,
+                        "text": t.text
+                    };
+                    // Send Data to Client
+                    res.write("data: " + JSON.stringify(smallTweet)+ '\n\n');
+
+                    // Rate Limiting
+                    sentRecently = true;
+                    setTimeout(function(){
+                          sentRecently = false;}, 5000);
+                }
             } else {
                 console.log(t);
             }
@@ -98,101 +115,68 @@ app.get("/tweets/:query", function(req, res){
 });
 
 //we'll use this to send the most recent tweet with the mentioned query and return the result as a kml file
-app.get("/kml/:query", function(req, res) {
-    var randomTweetNumber = Math.floor(Math.random() * 80);
-    //var randomTweetPage = Math.floor(Math.random()*8);
-    twitter.get('search', {
-        q: req.params["query"],
-        result_type: 'mixed',
-        geocode: "39.4,-76.6,10000mi",
-        lang: 'en',
-        page: 1,
-        rpp: 80
-    }, function(err, reply) {
-        if(err !== null || reply === null) {
-            console.log("Errors:", err);
-        } else {
-            try {
-                //console.log("Random GeoTweet Page#"+randomTweetPage);
-                console.log("Random GeoTweet#" + randomTweetNumber);
-                var name = reply.results[randomTweetNumber].from_user;
-                var description = reply.results[randomTweetNumber].text;
-                var place = reply.results[randomTweetNumber].location;
-                var placeNormalized = place; //if google provides a normalized address it will be set here, otherwise its just what the twitter user reported
-                var time = reply.results[randomTweetNumber].created_at;
-                var img = reply.results[randomTweetNumber].profile_image_url;
-                var lat = "";
-                var lng = "";
-                var coordinates = "";
-                var resultsJSON = {};
+app.get("/tweetKML", function(req, res) {
+    var t = latestGeoTweet;
+    // If latest tweet null, or has no coordinates, we can't continue.
+    if(!t){ res.end(); return; }
 
-                //we're checking each location against the google web decoder
-                //https://maps.googleapis.com/maps/api/geocode/json?address=TWITLOCATION&sensor=false
-                if(place !== null && place !== '') {
-                    request('https://maps.googleapis.com/maps/api/geocode/json?address=' + place + '&sensor=false', function(error, response, body) {
-                        var strjson = "" + body + "";
-                        resultsJSON = JSON.parse(strjson);
-                        if(resultsJSON.status == 'OK') {
-                            lat = resultsJSON.results[0].geometry.location.lat;
-                            lng = resultsJSON.results[0].geometry.location.lng;
-                            coordinates = lng + "," + lat + ",0";
-                            placeNormalized = resultsJSON.results[0].formatted_address;
+    try {
+        //we're checking each location against the google web decoder
+        //https://maps.googleapis.com/maps/api/geocode/json?address=TWITLOCATION&sensor=false
 
-                            var kml = '<?xml version="1.0" encoding="UTF-8"?>\
-            <kml xmlns="http://earth.google.com/kml/2.2" xmlns:gx="http://www.google.com/kml/ext/2.2">\
-            <Document>\
-            <Style id="My_Style">\
-            <IconStyle><scale>1.8</scale><Icon><href>' + img + '</href></Icon></IconStyle>\
-            <BalloonStyle>\
-            <bgColor>00eeeeee</bgColor> <textColor>000000</textColor>\
-            <text><![CDATA[ $[name] <HR> $[description]\
-            ]]> </text>\
-            </BalloonStyle>\
-            </Style>\
-            <Placemark>\
-            <name>' + placeNormalized + '</name>\
-            <LookAt>\
-                <longitude>' + lng + '</longitude>\
-                <latitude>' + lat + '</latitude>\
-                <altitude>0</altitude>\
-                <range>6000000</range>\
-            </LookAt>\
-            <description><![CDATA[\
-            <table width="400" height="100"><tr><td><img src="' + img + '"/></td>\
-            <td><span style="font-size:16px;"><b>' + name + '</b>:' + description + '</span></td></tr>\
-            <tr><span style="font-size:12px;">Posted from ' + place + ' - ' + time + '</span></tr>\
-            </table>]]>\
-            </description>\
-            <gx:balloonVisibility>1</gx:balloonVisibility>\
-            <styleUrl>#My_Style</styleUrl>\
-            <Point>\
-                <coordinates>' + coordinates + '</coordinates>\
-            </Point>\
-            </Placemark>\
-            </Document>\
-            </kml>';
+        // request('https://maps.googleapis.com/maps/api/geocode/json?address=' + t.coordinates.coordinates + '&sensor=false', function(error, response, body) {
+        //     var strjson = body;
+        //     resultsJSON = JSON.parse(strjson);
+        //     if(resultsJSON.status == 'OK') {
+        //         lat = resultsJSON.results[0].geometry.location.lat;
+        //         lng = resultsJSON.results[0].geometry.location.lng;
+        //         coordinates = lng + "," + lat + ",0";
+        //         placeNormalized = resultsJSON.results[0].formatted_address;
 
-                            console.log(kml);
-                            res.writeHead(200, {
-                                "Content-Type": "application/xml",
-                                "Access-Control-Allow-Origin": "*"
-                            });
+        var kml = '<?xml version="1.0" encoding="UTF-8"?>'
+            + '<kml xmlns="http://www.opengis.net/kml/2.2" xmlns:gx="http://www.google.com/kml/ext/2.2">'
+                + '<Document>'
+                    + '<Style id="My_Style">'
+                        + '<IconStyle><scale>1.8</scale><Icon><href>' + t.user.profile_img_url + '</href></Icon></IconStyle>'
+                        + '<BalloonStyle>'
+                            + '<bgColor>00eeeeee</bgColor> <textColor>000000</textColor>'
+                            + '<text><![CDATA[ $[name] <HR> $[description]]]> </text>'
+                        + '</BalloonStyle>'
+                    + '</Style>'
+                    + '<Placemark>'
+                    + '<name>' + 'place' + '</name>'
+                    + '<LookAt>'
+                    + '    <longitude>' + t.coordinates.coordinates[1] + '</longitude>'
+                    + '    <latitude>' + t.coordinates.coordinates[0] + '</latitude>'
+                    + '    <altitude>0</altitude>'
+                    + '    <range>6000000</range>'
+                    + '</LookAt>'
+                    + '<description><![CDATA['
+                    + '<table width="400" height="100"><tr><td><img src="' + t.user.profile_img_url + '"/></td>'
+                    + '<td><span style="font-size:16px;"><b>' + t.user.name + '</b>:' + t.text + '</span></td></tr>'
+                    //+ '<tr><span style="font-size:12px;">Posted from ' + place + ' - ' + time + '</span></tr>'
+                    + '</table>]]>'
+                    + '</description>'
+                    + '<gx:balloonVisibility>1</gx:balloonVisibility>'
+                    + '<styleUrl>#My_Style</styleUrl>'
+                    + '<Point>'
+                    +   '<coordinates>' + t.coordinates.coordinates[0] + ',' + t.coordinates.coordinates[1] + '</coordinates>'
+                    + '</Point>'
+                    + '</Placemark>'
+                + '</Document>'
+            + '</kml>';
+        kml = kml.trim();
+        console.log(kml);
+        res.writeHead(200, {
+            "Content-Type": "application/xml",
+            "Access-Control-Allow-Origin": "*"
+        });
 
-                            res.end(kml);
-                        }
-                    });
-                } else {
-                    res.writeHead(500);
-                    res.end(error);
-                }
-
-            } catch(err) {
-                console.error(err);
-            }
-        }
-    });
+        res.end(kml);
+    } catch(err) {
+        console.error(err);
+    }
 });
-
 
 app.get("/news", function(req, res) {
     // twitter.get('search', {

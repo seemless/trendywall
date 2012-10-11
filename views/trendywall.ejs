@@ -17,6 +17,8 @@
 
   <script>
   var ge;
+
+  var searchTerms = "";
   google.load("earth", "1");
 
   var networkLink;
@@ -28,14 +30,14 @@
   function initCB(instance) {
     ge = instance;
     ge.getWindow().setVisibility(true);
-    newPoint(ge, 39.125, -76.788);
+    //newPoint(ge, 39.125, -76.788);
   }
 
   function failureCB(errorCode) {}
 
   //Everything in this functions runs immediately on load
   $(function() {
-    var searchTerms = $("#searchTerms"),
+    searchTerms = $("#searchTerms"),
     allFields = $([]).add(searchTerms)
     tips = $(".validateTips");
 
@@ -99,44 +101,44 @@
     $("#dialog-form").dialog("open");
   });
 
-function newPoint(ge, lat, lon) {
+// function newPoint(ge, lat, lon) {
 
-    // Create the placemark.
-    var placemark = ge.createPlacemark('');
-    placemark.setName("G2, Inc.");
+//     // Create the placemark.
+//     var placemark = ge.createPlacemark('');
+//     placemark.setName("G2, Inc.");
 
-    // Define a custom icon.
-    var icon = ge.createIcon('');
-    icon.setHref('http://g2-inc.com/sites/all/themes/g2website/images/g2logo.png');
-    var style = ge.createStyle('');
-    style.getIconStyle().setIcon(icon);
-    style.getIconStyle().setScale(3.0);
-    placemark.setStyleSelector(style);
+//     // Define a custom icon.
+//     var icon = ge.createIcon('');
+//     icon.setHref('http://g2-inc.com/sites/all/themes/g2website/images/g2logo.png');
+//     var style = ge.createStyle('');
+//     style.getIconStyle().setIcon(icon);
+//     style.getIconStyle().setScale(3.0);
+//     placemark.setStyleSelector(style);
 
-    // Set the placemark's location.
-    var point = ge.createPoint('');
-    point.setLatitude(lat);
-    point.setLongitude(lon);
-    placemark.setGeometry(point);
+//     // Set the placemark's location.
+//     var point = ge.createPoint('');
+//     point.setLatitude(lat);
+//     point.setLongitude(lon);
+//     placemark.setGeometry(point);
 
-    // Add the placemark to Earth.
-    ge.getFeatures().appendChild(placemark);
+//     // Add the placemark to Earth.
+//     ge.getFeatures().appendChild(placemark);
 
-    // Get the current view.
-    var lookAt = ge.getView().copyAsLookAt(ge.ALTITUDE_RELATIVE_TO_GROUND);
+//     // Get the current view.
+//     var lookAt = ge.getView().copyAsLookAt(ge.ALTITUDE_RELATIVE_TO_GROUND);
 
-    // Set new latitude and longitude values.
-    lookAt.setLatitude(point.getLatitude());
-    lookAt.setLongitude(point.getLongitude());
+//     // Set new latitude and longitude values.
+//     lookAt.setLatitude(point.getLatitude());
+//     lookAt.setLongitude(point.getLongitude());
 
-    //zoom speed and range
-    ge.getOptions().setFlyToSpeed(.5);
-    lookAt.setRange(500000.0)
+//     //zoom speed and range
+//     ge.getOptions().setFlyToSpeed(.5);
+//     lookAt.setRange(500000.0)
 
-    // Update the initial view in Google Earth.
-    ge.getView().setAbstractView(lookAt);
+//     // Update the initial view in Google Earth.
+//     ge.getView().setAbstractView(lookAt);
 
-  }
+//   }
 
   /*
       var searchTerms = [
@@ -145,30 +147,21 @@ function newPoint(ge, lat, lon) {
     ["defcon"],["blackhat"],["computer virus"],["malware"],["information security professionals"],["military industial complex"]];
     */
 
+  function tweetOnMap() {
+    try{
+      var href= "/tweetKML";
+      var link = ge.createLink("");
+      link.setHref(href);
 
+      var networkLink = ge.createNetworkLink("");
+      networkLink.setLink(link, true, true);
 
-    function setNewTweet(query) {
-    //Time to pull in some geocoded tweets
-    //var currentHref = window.location.href.slice(0,-18);
-    //var href = currentHref+"/kml/"+query+'';
-    var href = 'http://50.116.22.120:3000/kml/' + query + '';
-    console.log(href);
+      // add the NetworkLink feature to Earth
+      ge.getFeatures().appendChild(networkLink);
 
-
-    networkLink = ge.createNetworkLink("");
-    networkLink.setDescription("NetworkLink open to fetched content");
-    networkLink.setName("Open NetworkLink");
-    networkLink.setFlyToView(true);
-
-    // create a Link object
-    var link = ge.createLink("");
-    link.setHref(href);
-
-    // attach the Link to the NetworkLink
-    networkLink.setLink(link);
-
-    // add the NetworkLink feature to Earth
-    ge.getFeatures().appendChild(networkLink);
+    } catch (e){
+      console.log(e);
+    }
   }
 
 
@@ -178,11 +171,10 @@ function newPoint(ge, lat, lon) {
     flickrTagMode = "all";
     flickrUrl = "./flickr/" + flickrTerms + "/" + flickrTagMode;
 
-
     $(".dragStar").draggable();
     $(".resizeStar").resizable();
     $("#storeNews").load("./googleTopWorldNews");
-//    $("#tweets").load("./tweets/" + searchTerms + "");
+    //$("#tweets").load("./tweets/" + searchTerms + "");
     $("#gohere").load("./twitter-earth");
     $("#news marquee").load("./news");
 
@@ -190,7 +182,6 @@ function newPoint(ge, lat, lon) {
     $("#slideshow").load(flickrUrl);
 
     google.setOnLoadCallback(init);
-
 
     $("#tweetTitle").html("Live " + searchTerms + " Tweets");
     $("#imagesTitle").html(searchTerms + " Images");
@@ -224,14 +215,17 @@ function newPoint(ge, lat, lon) {
     // Build the word cloud
     doCloud();
 
+    console.log(searchTerms);
     var twitterSource = new EventSource('/tweets/' + searchTerms);
     twitterSource.addEventListener('message', function(e){
       var tweet = $.parseJSON(e.data);
       console.log(tweet);
-      $("#tweets").prepend("<div class='tweet'><img class='tweet-pic' src='" + tweet.img_url + "'/><div class='tweet-text'><span class='tweet-user'>" + tweet.user + "</span><br/>" + tweet.text + "</span></div>");
+      $("#tweets").prepend("<div class='newtweet tweet' style='display: none;'><img class='tweet-pic' src='" + tweet.img_url + "'/><div class='tweet-text'><span class='tweet-user'>" + tweet.user + "</span><br/>" + tweet.text + "</span></div>");
+      $(".newtweet").show("slide", { direction: "up"}, 1000).removeClass("newtweet");
+
     }, false);
     // Try to cleanly close the event stream on page-unload.
-    $(window).unload(twitterSource.close());
+    $(window).unload(function(){twitterSource.close();});
 
 
     setInterval(function() {
@@ -256,8 +250,8 @@ function newPoint(ge, lat, lon) {
 
     //pull in new google earth tweet every 30 seconds (without authenticating we can only do about 1 request every 24 seconds)
     setInterval(function() {
-      setNewTweet(searchTerms)
-    }, 10000);
+      tweetOnMap();
+    }, 5000);
 
 
     //refresh google news every 1 hour

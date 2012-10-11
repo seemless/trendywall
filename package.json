@@ -1,6 +1,9 @@
 {
 	"name": "trendywall",
 	"version": "0.0.2",
-	"dependencies": ["express", "twit", "request", "flickr", "cssom", "sizzle", "ejs", "glossary", "feedparser", "async"],
+	"dependencies": ["express",
+		"request", "flickr", "cssom",
+		"sizzle", "ejs", "glossary",
+		"feedparser", "async", "ntwitter"],
 	"main": "index.js"
 }
