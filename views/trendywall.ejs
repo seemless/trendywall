@@ -150,14 +150,20 @@
   function tweetOnMap() {
     try{
       var href= "/tweetKML";
-      var link = ge.createLink("");
-      link.setHref(href);
 
-      var networkLink = ge.createNetworkLink("");
-      networkLink.setLink(link, true, true);
+      $.ajax({
+          type: "GET",
+          url:  "/tweetKML",
+          dataType: "text",
+          success: function(data){
+            if(!data){ console.log("no data yet"); return; }
+            console.log(data);
+            var kmlObj = ge.parseKml(data);
+            ge.getFeatures().appendChild(kmlObj);
 
-      // add the NetworkLink feature to Earth
-      ge.getFeatures().appendChild(networkLink);
+            console.log("appended");
+          }
+      });
 
     } catch (e){
       console.log(e);
