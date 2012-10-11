@@ -1,9 +1,12 @@
 var express = require("express");
 var app = express();
-var twit = require("twit");
+
+var twitter = require("ntwitter");
 var tconf = require("./conf/twitconf"); //config file for twitter
+var twit = new twitter(tconf.getConf());
+
 var request = require("request"); //for doing http gets.. in this case to get google top 10
-var twitter = new twit(tconf.getConf());
+
 var Flickr = require('flickr').Flickr;
 var fconf = require("./conf/flickrconf");
 var flickrKey = fconf.getConf()['consumer_key'];
@@ -51,32 +54,47 @@ app.get("/googleTopTechNews", function(req, res) {
 });
 
 app.get("/tweets/:query", function(req, res){
-    var stream = twitter.stream('statuses/filter', { track: req.params["query"] });
-    stream.on('tweet', function(t){
-        if(t.text){
-            var smallTweet = {
-                "user": t.user.name,
-                "img_url": t.user.profile_image_url,
-                "coordinates": t.coordinates.coordinates,
-                "text": t.text
-            };
-            console.log(smallTweet);
-            res.write("data: " + JSON.stringify(smallTweet)+ '\n\n');
-        } else {
-            console.log(t);
-        }
-    });
-
-    stream.on('limit', function(limit){
-        console.log(limit);
-    });
-
+    // Setup an Event-Stream to Client
     res.writeHead(200, {
         'Content-Type': 'text/event-stream',
         'Cache-Control': 'no-cache',
         'Connection': 'keep-alive'
     });
     res.write('\n');
+
+    // Build the connection to Twitter & serve Tweets to CLient
+    console.log("Twitter Stream Started");
+    var tStream = twit.stream('statuses/filter', { track: req.params["query"] }, function(stream){
+        stream.on('error', function(data, details){
+            console.log(data, details);
+        });
+    
+        // If we lose the connection to the client, stop pulling tweets & end processing for this "app.get";
+        req.on("close", function(){
+            console.log("Got Browser Close Event");
+            stream.destroy(); // Important! If we don't destroy this, Twitter gets angry...
+            res.end();
+        });
+
+        stream.on('data', function(t){
+            if(t.text){
+                var smallTweet = {
+                    "user": t.user.name,
+                    "img_url": t.user.profile_image_url,
+                    "coordinates": t.coordinates,
+                    "text": t.text
+                };
+                console.log(smallTweet);
+                res.write("data: " + JSON.stringify(smallTweet)+ '\n\n');
+            } else {
+                console.log(t);
+            }
+        });
+
+        stream.on('limit', function(limit){
+            console.log(limit);
+        });
+    });
 });
 
 //we'll use this to send the most recent tweet with the mentioned query and return the result as a kml file

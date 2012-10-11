@@ -230,6 +230,8 @@ function newPoint(ge, lat, lon) {
       console.log(tweet);
       $("#tweets").prepend("<div class='tweet'><img class='tweet-pic' src='" + tweet.img_url + "'/><div class='tweet-text'><span class='tweet-user'>" + tweet.user + "</span><br/>" + tweet.text + "</span></div>");
     }, false);
+    // Try to cleanly close the event stream on page-unload.
+    $(window).unload(twitterSource.close());
 
 
     setInterval(function() {
