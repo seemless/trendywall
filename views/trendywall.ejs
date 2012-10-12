@@ -22,6 +22,7 @@ var searchTerms = "";
 
 google.load("earth", "1");
 
+
 function geInit() {
   google.earth.createInstance('map3d', function(instance) {
     // Success Callback
@@ -137,8 +138,8 @@ function geGoToNewPoint(instance, lat, lon, iconHref) {
   lookAt.setLongitude(point.getLongitude());
 
   //zoom speed and range
-  instance.getOptions().setFlyToSpeed(.5);
-  lookAt.setRange(500000.0)
+  instance.getOptions().setFlyToSpeed(1);
+  lookAt.setRange(1000000.0)
 
   // Update the initial view in Google Earth.
   instance.getView().setAbstractView(lookAt);
@@ -153,7 +154,7 @@ function tweetOnMap() {
       }
 
       // Create div
-      var d = $('<div><table><tr><td><img src="'+
+      var d = $('<div style="max-width: 500px; margin: 10px;"><table><tr><td><img class="tweet-pic" src="'+
         t.user.profile_image_url + '"/></td>'+
         '<td><span style="font-size:large;"><b>'+t.user.name+'</b>:'+t.text+'</span></td></tr>'+
         '<tr><td colspan="2"><span style="font-size:small;">Posted from '+t.address+'</span></td></tr><tr><td colspan="2">'+t.created_at+'</td></tr>'+

@@ -50,6 +50,8 @@ div.tweet {
 .tweet-pic {
   float: left;
   padding: 5px;
+  height: 58px;
+  width: 58px;
 }
 
 .tweet-text {

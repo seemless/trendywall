@@ -138,6 +138,7 @@ app.get("/tweetForMap", function(req, res) {
                     if(resultsJSON.status == 'OK') {
                         t.address = resultsJSON.results[0].formatted_address;
                         res.end(JSON.stringify(t));
+                        t = null;
                         console.log("INFO: Sent GeoTweet.");
                     } else {
                         console.log("ERROR: Geocode Error -> ", resultsJSON);
@@ -150,11 +151,13 @@ app.get("/tweetForMap", function(req, res) {
                 function(error, response, body) {
                     resultsJSON = JSON.parse(body);
                     if(resultsJSON.status == 'OK') {
-                        lat = resultsJSON.results[0].geometry.location.lat;
-                        lng = resultsJSON.results[0].geometry.location.lng;
+                        // Add a little variance so the placemarks don't stack.
+                        lat = resultsJSON.results[0].geometry.location.lat + (Math.random()-0.5)/2;
+                        lng = resultsJSON.results[0].geometry.location.lng + (Math.random()-0.5)/2;
                         t.coordinates = {"coordinates": [lng, lat], "type": "point"};
                         t.address = resultsJSON.results[0].formatted_address;
                         res.end(JSON.stringify(t));
+                        t = null;
                         console.log("INFO: Sent GeoTweet.");
                     } else {
                         console.log("ERROR: Geocode Error -> ", resultsJSON);
