@@ -6,7 +6,6 @@ var tconf = require("./conf/twitconf"); //config file for twitter
 var twit = new twitter(tconf.getConf());
 
 var request = require("request"); //for doing http gets.. in this case to get google top 10
-
 var Flickr = require('flickr').Flickr;
 var fconf = require("./conf/flickrconf");
 var flickrKey = fconf.getConf()['consumer_key'];
@@ -55,7 +54,7 @@ app.get("/googleTopTechNews", function(req, res) {
 
 var latestGeoTweet = null;
 
-app.get("/tweets/:query", function(req, res){
+app.get("/tweets/:query", function(req, res) {
     // Setup an Event-Stream to Client
     res.writeHead(200, {
         'Content-Type': 'text/event-stream',
@@ -65,28 +64,32 @@ app.get("/tweets/:query", function(req, res){
     res.write('\n');
 
     // Build the connection to Twitter & serve Tweets to CLient
-    console.log("Twitter Stream Started");
-    var tStream = twit.stream('statuses/filter', { track: req.params["query"] }, function(stream){
+    console.log("INFO: Twitter Stream Started.");
+    var tStream = twit.stream('statuses/filter', {
+        track: req.params["query"]
+    }, function(stream) {
         // Used to rate-limit sending of events to the client.
         var sentRecently = false;
 
-        stream.on('error', function(data, details){
-            console.log(data, details);
+        stream.on('error', function(data, details) {
+            console.log("ERROR: Twitter Stream Error -> ", data, details);
         });
 
         // If we lose the connection to the client, stop pulling tweets & end processing for this "app.get";
-        req.on("close", function(){
-            console.log("Got Browser Close Event");
+        req.on("close", function() {
+            console.log("INFO: Received Browser Close Event. Shutting Down Twitter Stream.");
             stream.destroy(); // Important! If we don't destroy this, Twitter gets angry...
             res.end();
         });
 
-        stream.on('data', function(t){
-            if(t.text){
-                if(t.coordinates){
+        stream.on('data', function(t) {
+            if(t.text) {
+                // If this tweet has location info, store it for the Maps feature.
+                if(t.coordinates || t.user.location) {
                     latestGeoTweet = t;
                 }
-                if(!sentRecently){
+                // Check to be sure rate-limit flag isn't set.
+                if(!sentRecently) {
                     // Only compile the information we need to send
                     // (Tweet objects are huge!)
                     var smallTweet = {
@@ -96,86 +99,73 @@ app.get("/tweets/:query", function(req, res){
                         "text": t.text
                     };
                     // Send Data to Client
-                    res.write("data: " + JSON.stringify(smallTweet)+ '\n\n');
+                    res.write("data: " + JSON.stringify(smallTweet) + '\n\n');
 
                     // Rate Limiting
                     sentRecently = true;
-                    setTimeout(function(){
-                          sentRecently = false;}, 5000);
+                    setTimeout(function() {
+                        sentRecently = false;
+                    }, 5000);
                 }
             } else {
                 console.log(t);
             }
         });
 
-        stream.on('limit', function(limit){
+        stream.on('limit', function(limit) {
             console.log(limit);
         });
     });
 });
 
 //we'll use this to send the most recent tweet with the mentioned query and return the result as a kml file
-app.get("/tweetKML", function(req, res) {
+app.get("/tweetForMap", function(req, res) {
     var t = latestGeoTweet;
-    // If latest tweet null, or has no coordinates, we can't continue.
-    if(!t){ res.end(); return; }
+    // Until a tweet with location comes in, we can't continue.
+    if(!t) {
+        console.log("INFO: GeoTweet Unavailable.");
+        res.end();
+        return;
+    }
 
     try {
-        //we're checking each location against the google web decoder
-        //https://maps.googleapis.com/maps/api/geocode/json?address=TWITLOCATION&sensor=false
+        if(t.coordinates){
+            // If we have Lat/Long, Reverse Geocode w/ Google to get a Proper Address
+            latLng = t.coordinates.coordinates[1] + ',' + t.coordinates.coordinates[0];
+            request('http://maps.googleapis.com/maps/api/geocode/json?latlng='+latLng+'&sensor=false',
+                function(error, response, body){
+                    resultsJSON = JSON.parse(body);
+                    if(resultsJSON.status == 'OK') {
+                        t.address = resultsJSON.results[0].formatted_address;
+                        res.end(JSON.stringify(t));
+                        console.log("INFO: Sent GeoTweet.");
+                    } else {
+                        console.log("ERROR: Geocode Error -> ", resultsJSON);
+                    }
+                }
+            );
+        } else if(t.user.location) {
+            // If we only have an address (or City/State), Geocode w/ Google for a lat/Long
+            request('https://maps.googleapis.com/maps/api/geocode/json?address=' + t.user.location + '&sensor=false',
+                function(error, response, body) {
+                    resultsJSON = JSON.parse(body);
+                    if(resultsJSON.status == 'OK') {
+                        lat = resultsJSON.results[0].geometry.location.lat;
+                        lng = resultsJSON.results[0].geometry.location.lng;
+                        t.coordinates = {"coordinates": [lng, lat], "type": "point"};
+                        t.address = resultsJSON.results[0].formatted_address;
+                        res.end(JSON.stringify(t));
+                        console.log("INFO: Sent GeoTweet.");
+                    } else {
+                        console.log("ERROR: Geocode Error -> ", resultsJSON);
+                    }
 
-        // request('https://maps.googleapis.com/maps/api/geocode/json?address=' + t.coordinates.coordinates + '&sensor=false', function(error, response, body) {
-        //     var strjson = body;
-        //     resultsJSON = JSON.parse(strjson);
-        //     if(resultsJSON.status == 'OK') {
-        //         lat = resultsJSON.results[0].geometry.location.lat;
-        //         lng = resultsJSON.results[0].geometry.location.lng;
-        //         coordinates = lng + "," + lat + ",0";
-        //         placeNormalized = resultsJSON.results[0].formatted_address;
+                }
+            );
+        } else {
+            res.end();
+        }
 
-        var kml = '<?xml version="1.0" encoding="UTF-8"?>'
-            + '<kml xmlns="http://www.opengis.net/kml/2.2" xmlns:gx="http://www.google.com/kml/ext/2.2">'
-                + '<Document>'
-                    + '<Style id="My_Style">'
-                        + '<IconStyle><scale>1.8</scale><Icon><href>' + t.user.profile_image_url + '</href></Icon></IconStyle>'
-                        + '<BalloonStyle>'
-                            + '<bgColor>00eeeeee</bgColor> <textColor>00000000</textColor>'
-                            + '<text><![CDATA[ $[name] <HR> $[description]]]> </text>'
-                        + '</BalloonStyle>'
-                    + '</Style>'
-                    + '<Placemark id="thePoint">'
-                        + '<name>' + t.name + ' Tweets:' + '</name>'
-                        + '<description><![CDATA['
-                            + '<table width="400" height="100"><tr><td><img src="' + t.user.profile_image_url + '"/></td>'
-                            + '<td><span style="font-size:16px;"><b>' + t.user.name + '</b>:' + t.text + '</span></td></tr>'
-                            //+ '<tr><span style="font-size:12px;">Posted from ' + place + ' - ' + time + '</span></tr>'
-                            + '</table>]]>'
-                        + '</description>'
-                        + '<gx:balloonVisibility>1</gx:balloonVisibility>'
-                        + '<styleUrl>#My_Style</styleUrl>'
-                        + '<LookAt>'
-                            + '<longitude>' + t.coordinates.coordinates[1] + '</longitude>'
-                            + '<latitude>' + t.coordinates.coordinates[0] + '</latitude>'
-                            + '<altitude>0</altitude>'
-                            + '<range>60000</range>'
-                            + '<tilt>5.266354267548308</tilt>'
-                            + '<heading>2.017198810203125</heading>'
-                            + '<altitudeMode>relativeToGround</altitudeMode>'
-                        + '</LookAt>'
-                        + '<Point>'
-                            + '<coordinates>' + t.coordinates.coordinates[0] + ',' + t.coordinates.coordinates[1] + '</coordinates>'
-                        + '</Point>'
-                    + '</Placemark>'
-                 + '</Document>'
-            + '</kml>';
-        kml = kml.trim();
-        console.log(kml);
-        res.writeHead(200, {
-            "Content-Type": "text/plain",
-            "Access-Control-Allow-Origin": "*"
-        });
-
-        res.end(kml);
     } catch(err) {
         console.error(err);
     }
@@ -200,7 +190,6 @@ app.get("/news", function(req, res) {
     //         res.end(tweetToHTML);
     //     }
     // });
-
 });
 
 app.get("/trendywall", function(req, res) {
