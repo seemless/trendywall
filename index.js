@@ -20,6 +20,9 @@ app.configure(function(){
   app.set('view engine', 'jade');
 });
 
+// Serve static files
+app.use("/static", express.static(__dirname + '/static'));
+
 app.get('/ozone/tweetStream/:topic', function(req, res){
   res.render('twitterStream.jade',{topic:req.params.topic});
 });
