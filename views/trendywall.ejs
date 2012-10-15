@@ -12,7 +12,6 @@
 <!--   <script type="text/javascript" src="/static/js/d3.v2.min.js"></script>
   <script type="text/javascript" src="/static/js/d3.layout.cloud.js"></script>-->
   <script type="text/javascript" src="/static/js/jqcloud-1.0.2.min.js"></script>
-  <script type="text/javascript" src="/static/js/doCloud.js"></script>
   <link type="text/css" href="/static/css/jqcloud.css" rel="stylesheet"/>
 
   <script type="text/javascript" src="/static/js/layout.js"></script>
@@ -42,7 +41,6 @@ function geInit() {
     // Failure Callback
   });
 }
-
 
 //Everything in this functions runs immediately on load
 $(function() {
@@ -250,8 +248,6 @@ function loadPage(searchTerms) {
     // $next.show();
   }, 10000);
 
-  // Build the word cloud
-  doCloud();
 
   var twitterSource = new EventSource('/tweets/' + searchTerms);
   twitterSource.addEventListener('message', function(e) {
@@ -263,7 +259,8 @@ function loadPage(searchTerms) {
     }, 1000).removeClass("newtweet");
 
   }, false);
-  // Try to cleanly close the event stream on page-unload.
+
+  // Tell the server to close...
   $(window).unload(function() {
     twitterSource.close();
   });
@@ -310,7 +307,12 @@ function loadPage(searchTerms) {
 }
 
 // Update WordCloud every 10 minutes
-setInterval(doCloud(), 30 * 1000);
+setInterval(function(){
+    $("#wordcloud").html('');
+    $.getJSON("/getWordCloudWords/" + searchTerms, function(data, text, obj){
+      $("#wordcloud").jQCloud(data);
+    });
+  }, 30 * 1000);
 
   </script>
 </head>
@@ -330,7 +332,7 @@ setInterval(doCloud(), 30 * 1000);
           <div id="slideshow" class="content-wrapper"></div>
         </div>
         <div id="level4right" style="float: left;">
-          <div id="wordcloud" class="content-wrapper"></div>
+          <div id="wordcloud" class="content-wrapper"><span>Accumulating Words for Cloud...</span>  </div>
         </div>
       </div>
     </div>

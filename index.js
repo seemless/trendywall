@@ -14,10 +14,17 @@ var flickr = new Flickr(flickrKey, flickrSecret);
 var glossary = require("glossary")({
     verbose: true,
     collapse: true,
-    minFreq: 2
+    minFreq: 5
 });
 var FeedParser = require('feedparser');
 var async = require('async');
+
+//var jsdom = require('jsdom');
+
+// Global variables
+var g_wordBucket = "";
+var g_wordBucketWord = '';
+var MAX_BUCKET_LENGTH = 250000;
 
 //I guess this is the only way to include client side scripts and css?
 //they would go here
@@ -84,6 +91,9 @@ app.get("/tweets/:query", function(req, res) {
 
         stream.on('data', function(t) {
             if(t.text) {
+                // Dump the tweet into the Word Bucket
+                g_wordBucket += ' ' + t.text;
+
                 // If this tweet has location info, store it for the Maps feature.
                 if(t.coordinates || t.user.location) {
                     latestGeoTweet = t;
@@ -264,64 +274,78 @@ app.get("/flickr/:query/:tagMode", function(req, res) {
 });
 
 // Word Cloud Word Generation
-app.get("/getWordcloudWords", function(req, res) {
+app.get("/getWordcloudWords/:word", function(req, res) {
     res.type("text/plain");
 
-    var textStringsArray = []; // Text to make the wordcloud from
-    var feeds = ['http://english.aljazeera.net/Services/Rss/?PostingId=2007731105943979989' // Aljazeera English
-    ];
-
-    function parseFeed(d, callback) {
-        var parser = new FeedParser();
-        parser.parseUrl(d, function(error, meta, articles) {
-            if(!error) {
-                var out = "";
-                for(var a in articles) {
-                    out += " " + articles[a].description + " " + articles[a].summary + " " + articles[a].title;
-                }
-
-                // Store results from this feed.
-                textStringsArray.push(out);
-
-                // Done.
-                callback(null, out);
-            } else {
-                console.error(error);
-                callback(error, null);
-            }
-        });
+    if(g_wordBucketWord != req.params['word'].toLowerCase()){
+        g_wordBucket = "";
+        g_wordBucketWord = req.params['word'].toLowerCase();
+    }
+    // Only keep the last MAX_BUCKET_LENGTH # of words...
+    if(g_wordBucket.length > MAX_BUCKET_LENGTH){
+        g_wordBucket = g_wordBucket.slice(g_wordBucket.length-MAX_BUCKET_LENGTH);
     }
 
-    async.forEach(feeds, parseFeed, function(err) {
-        if(err) {
-            console.error(err);
-            res.end();
-        } else {
-            var s = "";
-            for(var i in textStringsArray) {
-                s += textStringsArray[i];
-            }
+    // Get links (so we can scrape them later...)
+     var urlRegEx = /(\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/ig;
+    // var links = g_wordBucket.match(urlRegEx);
 
+    // function getLink(url) {
+    //     jsdom.env({
+    //         html: url,
+    //         scripts: ["http://code.jquery.com/jquery.js"],
+    //         done: function(errors, window) {
+    //             var $ = window.$;
+    //             $("script").remove();
+    //             $("style").remove();
+    //             g_wordBucket += $("body").text();
+    //         }
+    //     });
+    // }
 
-            // Use Glossary to pick out important words & count them.
-            var words = glossary.extract(s.toLowerCase());
-            words.sort(function(a, b) {
-                return b.count - a.count;
-            });
+    // for(var l in links) {
+    //     getLink(links[l]);
+    // }
 
-            // Change the key names for JQCloud.
-            for(var w in words){
-                words[w].text = words[w].word;
-                delete words[w].word;
-                words[w].weight = words[w].count;
-                delete words[w].count;
-            }
+    //console.log(links);
 
-            // Return.
-            res.end(JSON.stringify(words));
-        }
+    // Remove "RT @xxxx" (retweet) tags
+    g_wordBucket = g_wordBucket.replace(/RT\s@(\S+)\s/ig, '');
+
+    // Remove HTML entities
+    g_wordBucket = g_wordBucket.replace(/&(\w+);/ig, '');
+
+    // Remove single numbers (not meaningful to us...)
+    g_wordBucket = g_wordBucket.replace(/\s([0-9]+)\s/ig, '');
+
+    // Remove Hyperlinks
+    g_wordBucket = g_wordBucket.replace(urlRegEx, '');
+
+    // Remove non-alphanumeric characters
+    g_wordBucket = g_wordBucket.replace(/\W/ig, ' ');
+
+    // Use Glossary to crawl and index the word bucket.
+    var words = glossary.extract(g_wordBucket.toLowerCase());
+
+    // Sort the words output from Glossary
+    words.sort(function(a, b) {
+        return b.count - a.count;
     });
 
+    // Change the key names for JQCloud.
+    for(var w in words){
+        words[w].text = words[w].word;
+        delete words[w].word;
+        words[w].weight = words[w].count;
+        delete words[w].count;
+    }
+
+    // Return.
+    res.end(JSON.stringify(words));
+});
+
+app.get("/wb", function(req, res){
+    res.end(g_wordBucket);
 });
 
 //process.env.PORT is a cloud9 thing. Use your own port (ex 9999) if on a normal platform.
