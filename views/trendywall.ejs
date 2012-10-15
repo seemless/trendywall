@@ -9,15 +9,18 @@
   <script type="text/javascript" src="//ajax.googleapis.com/ajax/libs/jqueryui/1.8.23/jquery-ui.min.js"></script>
   <script type="text/javascript" src="https://www.google.com/jsapi"></script>
 
-  <script type="text/javascript" src="/static/js/d3.v2.min.js"></script>
-  <script type="text/javascript" src="/static/js/d3.layout.cloud.js"></script>
+<!--   <script type="text/javascript" src="/static/js/d3.v2.min.js"></script>
+  <script type="text/javascript" src="/static/js/d3.layout.cloud.js"></script>-->
+  <script type="text/javascript" src="/static/js/jqcloud-1.0.2.min.js"></script>
   <script type="text/javascript" src="/static/js/doCloud.js"></script>
+  <link type="text/css" href="/static/css/jqcloud.css" rel="stylesheet"/>
 
   <script type="text/javascript" src="/static/js/layout.js"></script>
 
   <script>
 
 var geWidget;
+var activeSearchTerms = [];
 var searchTerms = "";
 
 google.load("earth", "1");
@@ -43,7 +46,7 @@ function geInit() {
 
 //Everything in this functions runs immediately on load
 $(function() {
-  searchTerms = $("#searchTerms"), allFields = $([]).add(searchTerms)
+  searchTerms = $("#searchTerms"), allFields = $([]).add(searchTerms);
   tips = $(".validateTips");
 
   function updateTips(t) {
@@ -86,12 +89,17 @@ $(function() {
         var bValid = true;
         allFields.removeClass("ui-state-error");
 
-        bValid = bValid && checkLength(searchTerms, "searchTerms", 2, 160);
+        //bValid = bValid && checkLength(searchTerms, "searchTerms", 2, 160);
 
-        bValid = bValid && checkRegexp(searchTerms, /^[a-z]([0-9a-z_])+$/i, "searchTerms may consist of a-z, 0-9, underscores, begin with a letter.");
+        //bValid = bValid && checkRegexp(searchTerms, /^[a-z]([0-9a-z_])+$/i, "searchTerms may consist of a-z, 0-9, underscores, begin with a letter.");
 
         if(bValid) {
-          searchTerms = $("#searchTerms").val();
+          // TEMP: only first word for searchTerms
+          searchTerms = $("#searchTerms").val().split(',')[0];
+
+          // Set the array of active search terms
+          activeSearchTerms = $("#searchTerms").val().split(',');
+
           $(this).dialog("close");
           loadPage(searchTerms);
           geInit();

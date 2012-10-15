@@ -309,6 +309,14 @@ app.get("/getWordcloudWords", function(req, res) {
                 return b.count - a.count;
             });
 
+            // Change the key names for JQCloud.
+            for(var w in words){
+                words[w].text = words[w].word;
+                delete words[w].word;
+                words[w].weight = words[w].count;
+                delete words[w].count;
+            }
+
             // Return.
             res.end(JSON.stringify(words));
         }
