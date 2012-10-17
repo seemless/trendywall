@@ -310,7 +310,9 @@ function loadPage(searchTerms) {
 setInterval(function(){
     $("#wordcloud").html('');
     $.getJSON("/getWordCloudWords/" + searchTerms, function(data, text, obj){
-      $("#wordcloud").jQCloud(data);
+      if(data){
+        $("#wordcloud").jQCloud(data);
+      }
     });
   }, 90 * 1000);
 

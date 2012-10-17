@@ -16,8 +16,37 @@ var glossary = require("glossary")({
     collapse: true,
     minFreq: 10
 });
-var FeedParser = require('feedparser');
-var async = require('async');
+
+// Database Setup
+var mongoose = require('mongoose'), db = mongoose.createConnection("localhost", "test");
+db.on('error', console.error.bind(console, 'connection error.'));
+
+// DB Open.
+var keywordSchema = new mongoose.Schema({
+    word: 'string',
+    isActive: 'boolean'
+});
+
+var wordbankSchema = new mongoose.Schema({
+    word: 'string',
+    count: 'number'
+});
+
+wordbankSchema.statics.addText = function(text, cb){
+    var words = text.split(' ');
+    for(var i in words){
+        this.update({word: words[i]}, {$inc: {count: 1} }, {upsert: true}, function (err, numberAffected, raw) {
+            if (err) console.log(err);
+            console.log('The number of updated documents was %d', numberAffected);
+            console.log('The raw response from Mongo was ', raw);
+        });
+    }
+    if(cb){cb();}
+};
+
+var Keywords = db.model('Keyword', keywordSchema);
+var wordbank = db.model('Wordbank', wordbankSchema);
+
 
 //var jsdom = require('jsdom');
 
@@ -91,8 +120,7 @@ app.get("/tweets/:query", function(req, res) {
 
         stream.on('data', function(t) {
             if(t.text) {
-                // Dump the tweet into the Word Bucket
-                g_wordBucket += ' ' + t.text;
+                wordbank.addText(t.text);
 
                 // If this tweet has location info, store it for the Maps feature.
                 if(t.coordinates || t.user.location) {
