@@ -20,7 +20,10 @@ h1 {
   color: #FFFFFF;
 }
 
-
+.search-term {
+  float: left;
+  padding: 10px;
+}
 
 /* --- Slideshow --- */
 

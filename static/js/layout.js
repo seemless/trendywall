@@ -4,22 +4,27 @@ function layout(){
 
 	// Calculate & set the size of all DIVs
 	var level1top_width = windowWidth;
-	var level1top_height = windowHeight * 0.95;
+	var level1top_height = windowHeight * 0.05;
+	var level1middle_width = windowWidth;
+	var level1middle_height = windowHeight * 0.95 - level1top_height;
 	var level1bottom_width = windowWidth;
-	var level1bottom_height = windowHeight - level1top_height;
+	var level1bottom_height = windowHeight - level1middle_height;
 	$('#level1top')
 		.css("width", level1top_width)
 		.css("height", level1top_height);
+	$('#level1middle')
+		.css("width", level1middle_width)
+		.css("height", level1middle_height);
 	$('#level1bottom')
 		.css("width", level1bottom_width)
 		.css("height", level1bottom_height);
 
-	var level2left_width = level1top_width * 0.2;
-	var level2left_height = level1top_height;
+	var level2left_width = level1middle_width * 0.2;
+	var level2left_height = level1middle_height;
 	var level2right_width = level2left_width;
-	var level2right_height = level1top_height;
-	var level2middle_width = level1top_width - level2left_width - level2right_width;
-	var level2middle_height = level1top_height;
+	var level2right_height = level1middle_height;
+	var level2middle_width = level1middle_width - level2left_width - level2right_width;
+	var level2middle_height = level1middle_height;
 	$('#level2left')
 		.css("width", level2left_width)
 		.css("height", level2left_height);

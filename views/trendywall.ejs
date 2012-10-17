@@ -5,12 +5,12 @@
   <link type="text/css" href="/static/css/main.css" rel="stylesheet" />
   <link type="text/css" href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.1/themes/dark-hive/jquery-ui.css" rel="Stylesheet" />
 
-  <script type="text/javascript" src="//ajax.googleapis.com/ajax/libs/jquery/1.8.1/jquery.min.js"></script>
-  <script type="text/javascript" src="//ajax.googleapis.com/ajax/libs/jqueryui/1.8.23/jquery-ui.min.js"></script>
-  <script type="text/javascript" src="https://www.google.com/jsapi"></script>
+  <script src="http://code.jquery.com/jquery-1.8.2.js"></script>
+  <script src="http://code.jquery.com/ui/1.9.0/jquery-ui.js"></script>
 
-<!--   <script type="text/javascript" src="/static/js/d3.v2.min.js"></script>
-  <script type="text/javascript" src="/static/js/d3.layout.cloud.js"></script>-->
+  <script type="text/javascript" src="https://www.google.com/jsapi"></script>
+  <script type="text/javascript" src="/static/js/googleEarth.js"></script>
+
   <script type="text/javascript" src="/static/js/jqcloud-1.0.2.min.js"></script>
   <link type="text/css" href="/static/css/jqcloud.css" rel="stylesheet"/>
 
@@ -18,33 +18,77 @@
 
   <script>
 
-var geWidget;
-var activeSearchTerms = [];
-var searchTerms = "";
 
-google.load("earth", "1");
+var keywords = [];
+var twitterStream = null;
 
+function startTwitterStream(terms){
+  var source = new EventSource('/twitterStream', {searchTerms: terms});
+  source.addEventListener('message', function(e) {
+    var tweet = $.parseJSON(e.data);
 
-function geInit() {
-  google.earth.createInstance('map3d', function(instance) {
-    // Success Callback
-    geWidget = instance;
-    geWidget.getWindow().setVisibility(true);
+    // Note "<" + "/xx>"" tags seperated to comply with HTML W3 specs.
+    var div = "<div class='newtweet tweet' style='display: none;'>"+
+                "<img class='tweet-pic' src='" + tweet.img_url + "'/>"+
+                "<div class='tweet-text'>"+
+                  "<span class='tweet-user'>" + tweet.user + "<" + "/span><br />"+
+                  "<span>" + tweet.text + "<" + "/span>"+
+                "<" + "/div>"+
+              "<" + "/div>";
 
-    // Turn on layers
-    geWidget.getLayerRoot().enableLayerById(geWidget.LAYER_BORDERS, true);
+    $("#tweets").prepend();
 
-    // Set G2 HQ as first point.
-    geGoToNewPoint(geWidget, 39.125, -76.788,
-      'http://g2-inc.com/sites/all/themes/g2website/images/g2logo.png');
-  }, function(error) {
-    // Failure Callback
-  });
+    $(".newtweet").show("slide", {
+      direction: "up"
+    }, 500).removeClass("newtweet");
+  }, false);
 }
 
 //Everything in this functions runs immediately on load
 $(function() {
-  searchTerms = $("#searchTerms"), allFields = $([]).add(searchTerms);
+  $.get('/getActiveSearchTerms', function(data){
+    g_searchTerms = data;
+  });
+
+
+$("#dialog-form").dialog({
+  autoOpen: false,
+  show: "fade",
+  hide: "fade",
+  height: 300,
+  width: 500,
+  modal: true,
+  buttons: {
+    "Submit": function () {
+      var terms = $("#searchTerms").val();
+      terms = terms.replace(/,\s/g, ','); // Remove spaces after a comma.
+      $(this).dialog("close");
+      if(g_searchTerms !== '') {
+        g_searchTerms += ',';
+      }
+      g_searchTerms += terms;
+      console.log(terms);
+    },
+  },
+  close: function () {
+    var html = '';
+    var terms = g_searchTerms.split(',');
+    for(var term in terms) {
+      html += "<span class='search-term'>" + terms[term] + "</span>";
+    }
+    $("#searchTermsSpans").html(html);
+    $("#map3d").show();
+    twitterStream = startTwitterStream(g_searchTerms);
+  }
+});
+
+  $("#changeSearchTermsButton").button().click(function(event){
+    event.preventDefault();
+    $("#map3d").hide();
+    $("#dialog-form").dialog("open");
+  });
+
+  //g_searchTerms = $("#searchTerms"), allFields = $([]).add(g_searchTerms);
   tips = $(".validateTips");
 
   function updateTips(t) {
@@ -74,153 +118,59 @@ $(function() {
     }
   }
 
-  $("#dialog-form").dialog({
-    autoOpen: false,
-    show: "fade",
-    hide: "fade",
-    height: 300,
-    width: 500,
-    modal: true,
-    buttons: {
-      "Submit": function() {
+  loadPage();
 
-        var bValid = true;
-        allFields.removeClass("ui-state-error");
-
-        //bValid = bValid && checkLength(searchTerms, "searchTerms", 2, 160);
-
-        //bValid = bValid && checkRegexp(searchTerms, /^[a-z]([0-9a-z_])+$/i, "searchTerms may consist of a-z, 0-9, underscores, begin with a letter.");
-
-        if(bValid) {
-          // TEMP: only first word for searchTerms
-          searchTerms = $("#searchTerms").val().split(',')[0];
-
-          // Set the array of active search terms
-          activeSearchTerms = $("#searchTerms").val().split(',');
-
-          $(this).dialog("close");
-          loadPage(searchTerms);
-          geInit();
-        }
-      },
-    },
-    close: function() {
-      allFields.val("").removeClass("ui-state-error");
-    }
-  });
-
-  $("#dialog-form").dialog("open");
 });
-
-function geGoToNewPoint(instance, lat, lon, iconHref) {
-  // Create the placemark.
-  var placemark = instance.createPlacemark('');
-  placemark.setName("G2, Inc.");
-
-  if(iconHref) {
-    // Define a custom icon.
-    var icon = instance.createIcon('');
-    icon.setHref(iconHref);
-    var style = instance.createStyle('');
-    style.getIconStyle().setIcon(icon);
-    style.getIconStyle().setScale(3.0);
-    placemark.setStyleSelector(style);
-  }
-
-  // Set the placemark's location.
-  var point = instance.createPoint('');
-  point.setLatitude(lat);
-  point.setLongitude(lon);
-  placemark.setGeometry(point);
-
-  // Add the placemark to Earth.
-  instance.getFeatures().appendChild(placemark);
-
-  // Get the current view.
-  var lookAt = instance.getView().copyAsLookAt(instance.ALTITUDE_RELATIVE_TO_GROUND);
-
-  // Set new latitude and longitude values.
-  lookAt.setLatitude(point.getLatitude());
-  lookAt.setLongitude(point.getLongitude());
-
-  //zoom speed and range
-  instance.getOptions().setFlyToSpeed(1);
-  lookAt.setRange(1000000.0)
-
-  // Update the initial view in Google Earth.
-  instance.getView().setAbstractView(lookAt);
-}
 
 function tweetOnMap() {
   try {
-    $.getJSON('/tweetForMap', function(t){
-      if(!t){
+    $.getJSON('/getGeoTweet', function (t) {
+      if(!t) {
         console.log("INFO: Didn't Get GeoTweet Response.");
         return;
       }
 
       // Create div
-      var d = $('<div style="max-width: 500px; margin: 10px;"><table><tr><td><img class="tweet-pic" src="'+
-        t.user.profile_image_url + '"/></td>'+
-        '<td><span style="font-size:large;"><b>'+t.user.name+'</b>:'+t.text+'</span></td></tr>'+
-        '<tr><td colspan="2"><span style="font-size:small;">Posted from '+t.address+'</span></td></tr><tr><td colspan="2">'+t.created_at+'</td></tr>'+
-        '</table></div>');
+      var d = $('<div style="max-width: 500px; margin: 10px;"><table><tr><td><img class="tweet-pic" src="' + t.user.profile_image_url + '"/></td>' + '<td><span style="font-size:large;"><b>' + t.user.name + '</b>:' + t.text + '</span></td></tr>' + '<tr><td colspan="2"><span style="font-size:small;">Posted from ' + t.address + '</span></td></tr><tr><td colspan="2">' + t.created_at + '</td></tr>' + '</table></div>');
 
       // Extract Lat/Long for convenience.
       var lat = t.coordinates.coordinates[1];
       var lng = t.coordinates.coordinates[0];
 
-      // Create Placemark
-      var placemark = geWidget.createPlacemark('');
-      geWidget.getFeatures().appendChild(placemark);
-
-      // Create Point
-      var point = geWidget.createPoint('');
-      point.setLatitude(lat);
-      point.setLongitude(lng);
-      placemark.setGeometry(point);
-
-      // Look at the Point
-      var la = geWidget.getView().copyAsLookAt(geWidget.ALTITUDE_RELATIVE_TO_GROUND);
-      la.setLatitude(lat);
-      la.setLongitude(lng);
-      geWidget.getView().setAbstractView(la);
-
-      // Create Balloon
-      var b = geWidget.createHtmlDivBalloon('');
-      b.setFeature(placemark);
-      b.setCloseButtonEnabled(false);
-      b.setContentDiv(d[0]);
-      geWidget.setBalloon(b);
-    })
-
-
+      // Put tweet on map.
+      geNewPoint(geWidget, {
+        balloonDiv: d[0],
+        flyTo: true,
+        lat: lat,
+        lng: lng
+      });
+    });
   } catch(e) {
     console.log(e);
   }
 }
 
 
-function loadPage(searchTerms) {
+function loadPage() {
   //flickrTerms can be a comma separated list
-  flickrTerms = searchTerms;
+  flickrTerms = g_searchTerms;
   flickrTagMode = "all";
   flickrUrl = "./flickr/" + flickrTerms + "/" + flickrTagMode;
 
   $(".dragStar").draggable();
   $(".resizeStar").resizable();
   $("#storeNews").load("./googleTopWorldNews");
-  //$("#tweets").load("./tweets/" + searchTerms + "");
+  //$("#tweets").load("./tweets/" + g_searchTerms + "");
   $("#gohere").load("./twitter-earth");
   $("#news marquee").load("./news");
 
 
   $("#slideshow").load(flickrUrl);
 
-  google.setOnLoadCallback(geInit);
+  //google.setOnLoadCallback(geInit);
 
-  $("#tweetTitle").html("Live " + searchTerms + " Tweets");
-  $("#imagesTitle").html(searchTerms + " Images");
+  $("#tweetTitle").html("Live " + g_searchTerms + " Tweets");
+  $("#imagesTitle").html(g_searchTerms + " Images");
 
   // *************SLIDESHOWS**********************
   setInterval(function() {
@@ -249,20 +199,11 @@ function loadPage(searchTerms) {
   }, 10000);
 
 
-  var twitterSource = new EventSource('/tweets/' + searchTerms);
-  twitterSource.addEventListener('message', function(e) {
-    var tweet = $.parseJSON(e.data);
-    console.log(tweet);
-    $("#tweets").prepend("<div class='newtweet tweet' style='display: none;'><img class='tweet-pic' src='" + tweet.img_url + "'/><div class='tweet-text'><span class='tweet-user'>" + tweet.user + "</span><br/>" + tweet.text + "</span></div>");
-    $(".newtweet").show("slide", {
-      direction: "up"
-    }, 1000).removeClass("newtweet");
 
-  }, false);
 
-  // Tell the server to close...
+  // Tell the server to close on Window Unload...
   $(window).unload(function() {
-    twitterSource.close();
+    twitterStream.close();
   });
 
 
@@ -274,7 +215,7 @@ function loadPage(searchTerms) {
 
   //pull in our initial google earth tweet after 4 seconds
   //  setTimeout(function() {
-  //      setNewTweet(searchTerms);
+  //      setNewTweet(g_searchTerms);
   //    }, 4000);
   setTimeout(function() {
     $("#storeNews").load("./googleTopWorldNews", function() {});
@@ -309,7 +250,7 @@ function loadPage(searchTerms) {
 // Update WordCloud every 10 minutes
 setInterval(function(){
     $("#wordcloud").html('');
-    $.getJSON("/getWordCloudWords/" + searchTerms, function(data, text, obj){
+    $.getJSON("/getWordCloudWords/" + g_searchTerms, function(data, text, obj){
       $("#wordcloud").jQCloud(data);
     });
   }, 30 * 1000);
@@ -317,7 +258,14 @@ setInterval(function(){
   </script>
 </head>
 <body style="background-color: black;">
-  <div id="level1top" style="">
+  <div id="level1top" class="">
+    <div id="g_searchTermsContainer" class="content-wrapper">
+    <div id="g_searchTermsSpans">
+    </div>
+    <input id='changeSearchTermsButton' type="submit" style="float: right;" value="New Search Term"/>
+    </div>
+  </div>
+  <div id="level1middle" style="">
     <div id="level2left" style="float: left;">
       <div id="googleNews" class="content-wrapper"></div>
     </div>
@@ -359,7 +307,7 @@ setInterval(function(){
 
     <form>
       <fieldset>
-        <label for="searchTerms">Enter Interest</label>
+        <label for="g_searchTerms">Enter Interest</label>
         <input type="text" name="searchTerms" id="searchTerms" class="text ui-widget-content ui-corner-all" />
       </fieldset>
     </form>

@@ -1,11 +1,16 @@
+// Global variables
+var g_wordBucket = "";
+var g_wordBucketWord = '';
+var g_keywords = [];
+
+// Constants
+var MAX_BUCKET_LENGTH = 250000;
+
 var express = require("express");
 var app = express();
 
-var twitter = require("ntwitter");
-var tconf = require("./conf/twitconf"); //config file for twitter
-var twit = new twitter(tconf.getConf());
-
 var request = require("request"); //for doing http gets.. in this case to get google top 10
+
 var Flickr = require('flickr').Flickr;
 var fconf = require("./conf/flickrconf");
 var flickrKey = fconf.getConf()['consumer_key'];
@@ -14,34 +19,26 @@ var flickr = new Flickr(flickrKey, flickrSecret);
 var glossary = require("glossary")({
     verbose: true,
     collapse: true,
-    minFreq: 5
+    minFreq: 5,
+    blacklist: ["rt", "http", "www"]
 });
-var FeedParser = require('feedparser');
-var async = require('async');
 
-//var jsdom = require('jsdom');
+var twitter = require("./handlers/twitterHandler.js");//({ wordBucket: g_wordBucket, wordBucketWord: g_wordBucketWord });
+var ozone = require("./handlers/ozoneHandler.js");
 
-// Global variables
-var g_wordBucket = "";
-var g_wordBucketWord = '';
-var MAX_BUCKET_LENGTH = 250000;
 
-//I guess this is the only way to include client side scripts and css?
-//they would go here
+
+// Setup
+app.configure(function(){
+    app.set('views', __dirname + '/views');
+    app.set('view engine', 'jade');
+});
+
+
 // Serve static files
 app.use("/static", express.static(__dirname + '/static'));
 
-// route routing is very easy with express, this will handle the request for root directory contents.
-// :id is used here to pattern match with the first value after the forward slash.
-app.get("/googleTop10Trends", function(req, res) {
-    request('http://www.google.com/trends/hottrends/atom/hourly', function(error, response, body) {
-        if(!error && response.statusCode == 200) {
-            res.end(body); // Print the google web page.
-        }
-    });
-});
-
-
+// TODO: Do better than this...
 app.get("/googleTopWorldNews", function(req, res) {
     request('http://news.google.com/news/section?pz=1&cf=all&ned=us&topic=w&output=html', function(error, response, body) {
         if(!error && response.statusCode == 200) {
@@ -50,138 +47,18 @@ app.get("/googleTopWorldNews", function(req, res) {
     });
 });
 
-
-app.get("/googleTopTechNews", function(req, res) {
-    request('http://news.google.com/news?pz=1&cf=all&ned=us&hl=en&topic=tc&output=html', function(error, response, body) {
-        if(!error && response.statusCode == 200) {
-            res.end(body); // Print the google tech news webpage
-        }
-    });
+// Note: app.all catches get, post, etc...
+app.all('/ozone/twitterStream', function(req, res){
+    res.render('twitterStream.jade');
 });
 
-var latestGeoTweet = null;
-
-app.get("/tweets/:query", function(req, res) {
-    // Setup an Event-Stream to Client
-    res.writeHead(200, {
-        'Content-Type': 'text/event-stream',
-        'Cache-Control': 'no-cache',
-        'Connection': 'keep-alive'
-    });
-    res.write('\n');
-
-    // Build the connection to Twitter & serve Tweets to CLient
-    console.log("INFO: Twitter Stream Started.");
-    var tStream = twit.stream('statuses/filter', {
-        track: req.params["query"]
-    }, function(stream) {
-        // Used to rate-limit sending of events to the client.
-        var sentRecently = false;
-
-        stream.on('error', function(data, details) {
-            console.log("ERROR: Twitter Stream Error -> ", data, details);
-        });
-
-        // If we lose the connection to the client, stop pulling tweets & end processing for this "app.get";
-        req.on("close", function() {
-            console.log("INFO: Received Browser Close Event. Shutting Down Twitter Stream.");
-            stream.destroy(); // Important! If we don't destroy this, Twitter gets angry...
-            res.end();
-        });
-
-        stream.on('data', function(t) {
-            if(t.text) {
-                // Dump the tweet into the Word Bucket
-                g_wordBucket += ' ' + t.text;
-
-                // If this tweet has location info, store it for the Maps feature.
-                if(t.coordinates || t.user.location) {
-                    latestGeoTweet = t;
-                }
-                // Check to be sure rate-limit flag isn't set.
-                if(!sentRecently) {
-                    // Only compile the information we need to send
-                    // (Tweet objects are huge!)
-                    var smallTweet = {
-                        "user": t.user.name,
-                        "img_url": t.user.profile_image_url,
-                        "coordinates": t.coordinates,
-                        "text": t.text
-                    };
-                    // Send Data to Client
-                    res.write("data: " + JSON.stringify(smallTweet) + '\n\n');
-
-                    // Rate Limiting
-                    sentRecently = true;
-                    setTimeout(function() {
-                        sentRecently = false;
-                    }, 5000);
-                }
-            } else {
-                console.log(t);
-            }
-        });
-
-        stream.on('limit', function(limit) {
-            console.log(limit);
-        });
-    });
+// If not Ozone...
+app.all('/twitterStream', function(req, res){
+    twitter.handler.getStream(req, res);
 });
 
-//we'll use this to send the most recent tweet with the mentioned query and return the result as a kml file
-app.get("/tweetForMap", function(req, res) {
-    var t = latestGeoTweet;
-    // Until a tweet with location comes in, we can't continue.
-    if(!t) {
-        console.log("INFO: GeoTweet Unavailable.");
-        res.end();
-        return;
-    }
-
-    try {
-        if(t.coordinates){
-            // If we have Lat/Long, Reverse Geocode w/ Google to get a Proper Address
-            latLng = t.coordinates.coordinates[1] + ',' + t.coordinates.coordinates[0];
-            request('http://maps.googleapis.com/maps/api/geocode/json?latlng='+latLng+'&sensor=false',
-                function(error, response, body){
-                    resultsJSON = JSON.parse(body);
-                    if(resultsJSON.status == 'OK') {
-                        t.address = resultsJSON.results[0].formatted_address;
-                        res.end(JSON.stringify(t));
-                        t = null;
-                        console.log("INFO: Sent GeoTweet.");
-                    } else {
-                        console.log("ERROR: Geocode Error -> ", resultsJSON);
-                    }
-                }
-            );
-        } else if(t.user.location) {
-            // If we only have an address (or City/State), Geocode w/ Google for a lat/Long
-            request('https://maps.googleapis.com/maps/api/geocode/json?address=' + t.user.location + '&sensor=false',
-                function(error, response, body) {
-                    resultsJSON = JSON.parse(body);
-                    if(resultsJSON.status == 'OK') {
-                        // Add a little variance so the placemarks don't stack.
-                        lat = resultsJSON.results[0].geometry.location.lat + (Math.random()-0.5)/2;
-                        lng = resultsJSON.results[0].geometry.location.lng + (Math.random()-0.5)/2;
-                        t.coordinates = {"coordinates": [lng, lat], "type": "point"};
-                        t.address = resultsJSON.results[0].formatted_address;
-                        res.end(JSON.stringify(t));
-                        t = null;
-                        console.log("INFO: Sent GeoTweet.");
-                    } else {
-                        console.log("ERROR: Geocode Error -> ", resultsJSON);
-                    }
-
-                }
-            );
-        } else {
-            res.end();
-        }
-
-    } catch(err) {
-        console.error(err);
-    }
+app.all("/getGeoTweet", function(req, res) {
+    twitter.handler.getGeoTweet(req, res);
 });
 
 app.get("/news", function(req, res) {
@@ -344,8 +221,8 @@ app.get("/getWordcloudWords/:word", function(req, res) {
     res.end(JSON.stringify(words));
 });
 
-app.get("/wb", function(req, res){
-    res.end(g_wordBucket);
+app.get("/getActiveSearchTerms", function(req, res){
+    res.end(JSON.stringify(g_activeSearchTerms));
 });
 
 //process.env.PORT is a cloud9 thing. Use your own port (ex 9999) if on a normal platform.
