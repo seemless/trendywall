@@ -14,7 +14,7 @@ var flickr = new Flickr(flickrKey, flickrSecret);
 var glossary = require("glossary")({
     verbose: true,
     collapse: true,
-    minFreq: 5
+    minFreq: 10
 });
 var FeedParser = require('feedparser');
 var async = require('async');
@@ -24,7 +24,7 @@ var async = require('async');
 // Global variables
 var g_wordBucket = "";
 var g_wordBucketWord = '';
-var MAX_BUCKET_LENGTH = 250000;
+var MAX_BUCKET_LENGTH = 25000;
 
 //I guess this is the only way to include client side scripts and css?
 //they would go here

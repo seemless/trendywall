@@ -289,7 +289,7 @@ function loadPage(searchTerms) {
   //pull in new google earth tweet every 30 seconds (without authenticating we can only do about 1 request every 24 seconds)
   setInterval(function() {
     tweetOnMap();
-  }, 15000);
+  }, 30000);
 
 
   //refresh google news every 1 hour
@@ -306,13 +306,13 @@ function loadPage(searchTerms) {
   }, 600000);
 }
 
-// Update WordCloud every 10 minutes
+// Update WordCloud every 90 sec
 setInterval(function(){
     $("#wordcloud").html('');
     $.getJSON("/getWordCloudWords/" + searchTerms, function(data, text, obj){
       $("#wordcloud").jQCloud(data);
     });
-  }, 30 * 1000);
+  }, 90 * 1000);
 
   </script>
 </head>
