@@ -78,59 +78,65 @@ var twitterHandler = function(dbModel) {
 
                 myEmitter.on('keywordsStringUpdated', function(){
                     if(newKeywordsString === '') {
-                        console.log("ERROR: No Keywords. Can't start Twitter Stream.");
+                        console.error("ERROR: No Keywords. Can't start Twitter Stream.");
                         return;
                     } else if(newKeywordsString === currentKeywordsString && tStream) {
-                        console.log("INFO: Keywords Unchanged. No need to restart stream from Twitter.");
+                        console.info("INFO: Keywords Unchanged. No need to restart stream from Twitter.");
                         return;
-                    } // Else Proceed...
+                    } else {
+                        // Store the New Keywords
+                        currentKeywordsString = newKeywordsString;
 
-                    currentKeywordsString = newKeywordsString;
+                        // Build the connection to Twitter
+                        tStream = twit.stream('statuses/filter', {
+                            track: currentKeywordsString
+                        }, function (streamEmitter) {
+                            tStreamEmitter = streamEmitter;
 
-                    // Build the connection to Twitter
-                    tStream = twit.stream('statuses/filter', {
-                        track: currentKeywordsString
-                    }, function (streamEmitter) {
-                        tStreamEmitter = streamEmitter;
+                            streamEmitter.on('error', function (data, details) {
+                                console.error("ERROR: Twitter streamEmitter Error -> ", data, details);
+                            });
 
-                        streamEmitter.on('error', function (data, details) {
-                            console.log("ERROR: Twitter streamEmitter Error -> ", data, details);
-                        });
+                            streamEmitter.on('data', function (t) {
+                                if(t.text) {
+                                    var tweetWords = t.text.split(" ");
 
-                        streamEmitter.on('data', function (t) {
-                            if(t.text) {
-                                var tweetWords = t.text.split(" ");
-
-                                // Get all active keywords
-                                keywordsModel.find({
-                                    isActive: true
-                                }, function (err, activeKeywords) {
-                                    for(var i in activeKeywords) {
-                                        // If the keyword is in this tweet, store the tweet in this keyword's bank.
-                                        if(activeKeywords[i].word in tweetWords) {
-                                            activeKeywords[i].wordbank.addText(tweetWords);
+                                    // Find the keywords this was for.
+                                    keywordsModel.find({
+                                        isActive: true
+                                    }, function (err, activeKeywords) {
+                                        if(err) console.error("ERROR: Storing Tweet returned Error!", err);
+                                        for(var i in activeKeywords) {
+                                            // If the keyword is in this tweet, store the tweet in this keyword's bank.
+                                            for(var j in tweetWords) {
+                                                if(tweetWords[j] == activeKeywords[i].keyword){
+                                                    console.log(activeKeywords[i].words);
+                                                    activeKeywords[i].addText(tweetWords);
+                                                    //console.info("INFO: Stored tweet text under keyword ", activeKeywords[i].keyword);
+                                                    break;
+                                                }
+                                            }
                                         }
+                                    });
+
+                                    // If this tweet has location info, store it for the Maps feature.
+                                    if(t.coordinates || t.user.location) {
+                                        latestTweetWithLoc = t;
                                     }
-                                });
 
-                                // If this tweet has location info, store it for the Maps feature.
-                                if(t.coordinates || t.user.location) {
-                                    latestTweetWithLoc = t;
+                                } else {
+                                    console.log(t);
                                 }
+                            });
 
-                            } else {
-                                console.log(t);
-                            }
+                            streamEmitter.on('limit', function (limit) {
+                                console.log(limit);
+                            });
                         });
 
-                        streamEmitter.on('limit', function (limit) {
-                            console.log(limit);
-                        });
-                    });
-
-                    console.log("INFO: Stream from Twitter Started.");
-                    myEmitter.emit('streamFromTwitterStarted');
-
+                        console.log("INFO: Stream from Twitter Started.");
+                        myEmitter.emit('streamFromTwitterStarted');
+                    }
                 });
             };
 

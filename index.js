@@ -8,14 +8,13 @@ var fconf = require("./conf/flickrconf");
 var flickrKey = fconf.getConf()['consumer_key'];
 var flickrSecret = fconf.getConf()['consumer_sercret'];
 var flickr = new Flickr(flickrKey, flickrSecret);
+
 var glossary = require("glossary")({
     verbose: true,
     collapse: true,
     minFreq: 5,
     blacklist: ["rt", "http", "www"]
 });
-
-
 
 var NUM_WORDS_IN_CLOUD = 50;
 
@@ -25,13 +24,20 @@ var mongoose = require('mongoose'), db = mongoose.createConnection("localhost", 
 db.on('error', console.error.bind(console, 'connection error.'));
 
 // DB Open.
-var WordbankSchema = new mongoose.Schema({
+var WordSchema = new mongoose.Schema({
     word: 'string',
     count: 'number'
 });
 
+var KeywordSchema = new mongoose.Schema({
+    keyword: 'string',
+    isActive: 'boolean',
+    words: [WordSchema]
+});
+
+
 // Pass in array of words/phrases to store.
-WordbankSchema.methods.addText = function(words, cb){
+KeywordSchema.methods.addText = function(words, cb){
     var localCallback = function (err, numberAffected, raw) {
         if (err) console.log(err);
         console.log('The number of updated documents was %d', numberAffected);
@@ -43,18 +49,13 @@ WordbankSchema.methods.addText = function(words, cb){
         // Using "Upsert", meaning:
         // If word in database, increment it's 'count' by 1,
         // Else, insert the word with a 'count' of 1.
-        this.update({word: words[i]}, {$inc: {count: 1} }, {upsert: true}, localCallback);
+        this.update({"words.word": words[i]}, {$inc: {count: 1} }, {upsert: true}, localCallback);
     }
 
     // If we got passed a callback, call it.
     if(cb){cb();}
 };
 
-var KeywordSchema = new mongoose.Schema({
-    keyword: 'string',
-    isActive: 'boolean',
-    wordbank: [WordbankSchema]
-});
 
 KeywordSchema.statics.activateKeywords = function(keywords, cb){
     var localCallback = function (err, numberAffected, raw) {
@@ -104,13 +105,14 @@ app.all('/ozone/twitterStream', function(req, res){
 app.all('/twitterStream', function(req, res){
     var keywords = null;
     var s = req.param('keywords');
-    console.log(s);
-    if(s){
-        keywords = s.split(',');
-    }
+    
+    console.log("INFO: Keywords passed as query parameters to /twitterstream --> ", s);
+    
+    if(s) keywords = s.split(',');
+
     KeywordsModel.activateKeywords(keywords);
-    twitter.startStreamFromTwitter();
     twitter.startStreamToClient(req, res);
+    twitter.startStreamFromTwitter();
 });
 
 app.all("/getGeoTweet", function(req, res) {
