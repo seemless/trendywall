@@ -236,7 +236,7 @@ function loadPage() {
   //pull in new google earth tweet every 30 seconds (without authenticating we can only do about 1 request every 24 seconds)
   setInterval(function () {
     tweetOnMap();
-  }, 15000);
+  }, 30000);
 
 
   //refresh google news every 1 hour
@@ -253,6 +253,7 @@ function loadPage() {
   }, 600000);
 }
 
+<<<<<<< HEAD
 // Update WordCloud every 10 minutes
 setInterval(function () {
   $("#wordcloud").html('');
@@ -260,6 +261,18 @@ setInterval(function () {
     $("#wordcloud").jQCloud(data);
   });
 }, 30 * 1000);
+=======
+// Update WordCloud every 90 sec
+setInterval(function(){
+    $("#wordcloud").html('');
+    $.getJSON("/getWordCloudWords/" + searchTerms, function(data, text, obj){
+      if(data){
+        $("#wordcloud").jQCloud(data);
+      }
+    });
+  }, 90 * 1000);
+
+>>>>>>> 9cc56721d5259a8c1fbe730dd251ba88a0271b9e
   </script>
 </head>
 <body style="background-color: black;">
