@@ -253,15 +253,6 @@ function loadPage() {
   }, 600000);
 }
 
-<<<<<<< HEAD
-// Update WordCloud every 10 minutes
-setInterval(function () {
-  $("#wordcloud").html('');
-  $.getJSON("/getWordCloudWords/", function (data, text, obj) {
-    $("#wordcloud").jQCloud(data);
-  });
-}, 30 * 1000);
-=======
 // Update WordCloud every 90 sec
 setInterval(function(){
     $("#wordcloud").html('');
@@ -272,7 +263,6 @@ setInterval(function(){
     });
   }, 90 * 1000);
 
->>>>>>> 9cc56721d5259a8c1fbe730dd251ba88a0271b9e
   </script>
 </head>
 <body style="background-color: black;">

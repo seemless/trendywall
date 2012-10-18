@@ -11,57 +11,13 @@ var flickr = new Flickr(flickrKey, flickrSecret);
 var glossary = require("glossary")({
     verbose: true,
     collapse: true,
-<<<<<<< HEAD
     minFreq: 5,
     blacklist: ["rt", "http", "www"]
 });
-=======
-    minFreq: 10
-});
-
-// Database Setup
-var mongoose = require('mongoose'), db = mongoose.createConnection("localhost", "test");
-db.on('error', console.error.bind(console, 'connection error.'));
-
-// DB Open.
-var keywordSchema = new mongoose.Schema({
-    word: 'string',
-    isActive: 'boolean'
-});
-
-var wordbankSchema = new mongoose.Schema({
-    word: 'string',
-    count: 'number'
-});
-
-wordbankSchema.statics.addText = function(text, cb){
-    var words = text.split(' ');
-    for(var i in words){
-        this.update({word: words[i]}, {$inc: {count: 1} }, {upsert: true}, function (err, numberAffected, raw) {
-            if (err) console.log(err);
-            console.log('The number of updated documents was %d', numberAffected);
-            console.log('The raw response from Mongo was ', raw);
-        });
-    }
-    if(cb){cb();}
-};
-
-var Keywords = db.model('Keyword', keywordSchema);
-var wordbank = db.model('Wordbank', wordbankSchema);
-
->>>>>>> 9cc56721d5259a8c1fbe730dd251ba88a0271b9e
 
 
-<<<<<<< HEAD
+
 var NUM_WORDS_IN_CLOUD = 50;
-=======
-// Global variables
-var g_wordBucket = "";
-var g_wordBucketWord = '';
-var MAX_BUCKET_LENGTH = 25000;
->>>>>>> 9cc56721d5259a8c1fbe730dd251ba88a0271b9e
-
-
 
 
 // Database Setup
@@ -107,73 +63,11 @@ KeywordSchema.statics.activateKeywords = function(keywords, cb){
         console.log('The raw response from Mongo was ', raw);
     };
 
-<<<<<<< HEAD
     for(var i in keywords){
         this.update({keyword: keywords[i]}, {isActive: true}, { upsert: true }, localCallback);
     }
     if(cb){cb();}
 };
-=======
-app.get("/tweets/:query", function(req, res) {
-    // Setup an Event-Stream to Client
-    res.writeHead(200, {
-        'Content-Type': 'text/event-stream',
-        'Cache-Control': 'no-cache',
-        'Connection': 'keep-alive'
-    });
-    res.write('\n');
-
-    // Build the connection to Twitter & serve Tweets to CLient
-    console.log("INFO: Twitter Stream Started.");
-    var tStream = twit.stream('statuses/filter', {
-        track: req.params["query"]
-    }, function(stream) {
-        // Used to rate-limit sending of events to the client.
-        var sentRecently = false;
-
-        stream.on('error', function(data, details) {
-            console.log("ERROR: Twitter Stream Error -> ", data, details);
-        });
-
-        // If we lose the connection to the client, stop pulling tweets & end processing for this "app.get";
-        req.on("close", function() {
-            console.log("INFO: Received Browser Close Event. Shutting Down Twitter Stream.");
-            stream.destroy(); // Important! If we don't destroy this, Twitter gets angry...
-            res.end();
-        });
-
-        stream.on('data', function(t) {
-            if(t.text) {
-                wordbank.addText(t.text);
-
-                // If this tweet has location info, store it for the Maps feature.
-                if(t.coordinates || t.user.location) {
-                    latestGeoTweet = t;
-                }
-                // Check to be sure rate-limit flag isn't set.
-                if(!sentRecently) {
-                    // Only compile the information we need to send
-                    // (Tweet objects are huge!)
-                    var smallTweet = {
-                        "user": t.user.name,
-                        "img_url": t.user.profile_image_url,
-                        "coordinates": t.coordinates,
-                        "text": t.text
-                    };
-                    // Send Data to Client
-                    res.write("data: " + JSON.stringify(smallTweet) + '\n\n');
-
-                    // Rate Limiting
-                    sentRecently = true;
-                    setTimeout(function() {
-                        sentRecently = false;
-                    }, 5000);
-                }
-            } else {
-                console.log(t);
-            }
-        });
->>>>>>> 9cc56721d5259a8c1fbe730dd251ba88a0271b9e
 
 var KeywordsModel = db.model('Keyword', KeywordSchema);
 
