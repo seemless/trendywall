@@ -1,11 +1,3 @@
-// Global variables
-var g_wordBucket = "";
-var g_wordBucketWord = '';
-var g_keywords = [];
-
-// Constants
-var MAX_BUCKET_LENGTH = 250000;
-
 var express = require("express");
 var app = express();
 
@@ -23,9 +15,66 @@ var glossary = require("glossary")({
     blacklist: ["rt", "http", "www"]
 });
 
-var twitter = require("./handlers/twitterHandler.js");//({ wordBucket: g_wordBucket, wordBucketWord: g_wordBucketWord });
-var ozone = require("./handlers/ozoneHandler.js");
 
+var NUM_WORDS_IN_CLOUD = 50;
+
+
+
+
+// Database Setup
+var mongoose = require('mongoose'), db = mongoose.createConnection("localhost", "test");
+db.on('error', console.error.bind(console, 'connection error.'));
+
+// DB Open.
+var WordbankSchema = new mongoose.Schema({
+    word: 'string',
+    count: 'number'
+});
+
+// Pass in array of words/phrases to store.
+WordbankSchema.methods.addText = function(words, cb){
+    var localCallback = function (err, numberAffected, raw) {
+        if (err) console.log(err);
+        console.log('The number of updated documents was %d', numberAffected);
+        console.log('The raw response from Mongo was ', raw);
+    };
+
+    // Store Words in DB
+    for(var i in words){
+        // Using "Upsert", meaning:
+        // If word in database, increment it's 'count' by 1,
+        // Else, insert the word with a 'count' of 1.
+        this.update({word: words[i]}, {$inc: {count: 1} }, {upsert: true}, localCallback);
+    }
+
+    // If we got passed a callback, call it.
+    if(cb){cb();}
+};
+
+var KeywordSchema = new mongoose.Schema({
+    keyword: 'string',
+    isActive: 'boolean',
+    wordbank: [WordbankSchema]
+});
+
+KeywordSchema.statics.activateKeywords = function(keywords, cb){
+    var localCallback = function (err, numberAffected, raw) {
+        if (err) console.log(err);
+        console.log('The number of updated documents was %d', numberAffected);
+        console.log('The raw response from Mongo was ', raw);
+    };
+
+    for(var i in keywords){
+        this.update({keyword: keywords[i]}, {isActive: true}, { upsert: true }, localCallback);
+    }
+    if(cb){cb();}
+};
+
+var KeywordsModel = db.model('Keyword', KeywordSchema);
+
+
+var twitter = require("./handlers/twitterHandler.js")(KeywordsModel);//({ wordBucket: g_wordBucket, wordBucketWord: g_wordBucketWord });
+var ozone = require("./handlers/ozoneHandler.js");
 
 
 // Setup
@@ -54,11 +103,19 @@ app.all('/ozone/twitterStream', function(req, res){
 
 // If not Ozone...
 app.all('/twitterStream', function(req, res){
-    twitter.handler.getStream(req, res);
+    var keywords = null;
+    var s = req.param('keywords');
+    console.log(s);
+    if(s){
+        keywords = s.split(',');
+    }
+    KeywordsModel.activateKeywords(keywords);
+    twitter.startStreamFromTwitter();
+    twitter.startStreamToClient(req, res);
 });
 
 app.all("/getGeoTweet", function(req, res) {
-    twitter.handler.getGeoTweet(req, res);
+    twitter.getGeoTweet(req, res);
 });
 
 app.get("/news", function(req, res) {
@@ -153,16 +210,7 @@ app.get("/flickr/:query/:tagMode", function(req, res) {
 // Word Cloud Word Generation
 app.get("/getWordcloudWords/:word", function(req, res) {
     res.type("text/plain");
-
-    if(g_wordBucketWord != req.params['word'].toLowerCase()){
-        g_wordBucket = "";
-        g_wordBucketWord = req.params['word'].toLowerCase();
-    }
-    // Only keep the last MAX_BUCKET_LENGTH # of words...
-    if(g_wordBucket.length > MAX_BUCKET_LENGTH){
-        g_wordBucket = g_wordBucket.slice(g_wordBucket.length-MAX_BUCKET_LENGTH);
-    }
-
+    return;
     // Get links (so we can scrape them later...)
      var urlRegEx = /(\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/ig;
     // var links = g_wordBucket.match(urlRegEx);
@@ -222,7 +270,14 @@ app.get("/getWordcloudWords/:word", function(req, res) {
 });
 
 app.get("/getActiveSearchTerms", function(req, res){
-    res.end(JSON.stringify(g_activeSearchTerms));
+    var out = [];
+    KeywordsModel.find({isActive: true}, function(err, results){
+        for(var i in results){
+            out.push(results[i].word);
+        }
+    });
+
+    res.end(JSON.stringify(out));
 });
 
 //process.env.PORT is a cloud9 thing. Use your own port (ex 9999) if on a normal platform.

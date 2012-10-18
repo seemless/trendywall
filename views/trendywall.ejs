@@ -19,22 +19,30 @@
   <script>
 
 
-var keywords = [];
-var twitterStream = null;
+var g_keywords = [];
+var g_twitterStream = null;
 
-function startTwitterStream(terms){
-  var source = new EventSource('/twitterStream', {searchTerms: terms});
-  source.addEventListener('message', function(e) {
+function getKeywordsString(inArray) {
+  if(!inArray) inArray = g_keywords;
+
+  var keywordsString = "";
+  for(var i in g_keywords) keywordsString += g_keywords[i] + ',';
+  keywordsString = keywordsString.slice(0, keywordsString.length - 1);    // Remove Trailing Comma
+
+  return keywordsString;
+}
+
+function startTwitterStream() {
+
+
+  var url = '/twitterStream?keywords=' + escape(keywordsString);
+  console.log(url);
+  var source = new EventSource(url);
+  source.addEventListener('message', function (e) {
     var tweet = $.parseJSON(e.data);
 
     // Note "<" + "/xx>"" tags seperated to comply with HTML W3 specs.
-    var div = "<div class='newtweet tweet' style='display: none;'>"+
-                "<img class='tweet-pic' src='" + tweet.img_url + "'/>"+
-                "<div class='tweet-text'>"+
-                  "<span class='tweet-user'>" + tweet.user + "<" + "/span><br />"+
-                  "<span>" + tweet.text + "<" + "/span>"+
-                "<" + "/div>"+
-              "<" + "/div>";
+    var div = "<div class='newtweet tweet' style='display: none;'>" + "<img class='tweet-pic' src='" + tweet.img_url + "'/>" + "<div class='tweet-text'>" + "<span class='tweet-user'>" + tweet.user + "<" + "/span><br />" + "<span>" + tweet.text + "<" + "/span>" + "<" + "/div>" + "<" + "/div>";
 
     $("#tweets").prepend();
 
@@ -45,55 +53,56 @@ function startTwitterStream(terms){
 }
 
 //Everything in this functions runs immediately on load
-$(function() {
-  $.get('/getActiveSearchTerms', function(data){
-    g_searchTerms = data;
+$(function () {
+  // $.getJSON('/getActiveSearchTerms', function(data){
+  //   g_keywords = data;
+  // });
+
+  $("#dialog-form").dialog({
+    autoOpen: false,
+    show: "fade",
+    hide: "fade",
+    height: 300,
+    width: 500,
+    modal: true,
+    buttons: {
+      "Submit": function () {
+        var terms = $("#searchTerms").val();
+        terms = terms.replace(/,\s/g, ','); // Remove spaces after a comma.
+        $(this).dialog("close");
+
+        termsArray = terms.split(",");
+        for(var i in termsArray) {
+          if($.inArray(termsArray[i], g_keywords) == -1) {
+            g_keywords.push(termsArray[i].trim());
+          }
+        }
+        console.log(g_keywords);
+      },
+    },
+    close: function () {
+      var html = '';
+      for(var i in g_keywords) {
+        html += "<span class='search-term'>" + g_keywords[i] + "<" + "/span>";
+      }
+      $("#keywordsSpans").html(html);
+      $("#map3d").show();
+      twitterStream = startTwitterStream();
+    }
   });
 
-
-$("#dialog-form").dialog({
-  autoOpen: false,
-  show: "fade",
-  hide: "fade",
-  height: 300,
-  width: 500,
-  modal: true,
-  buttons: {
-    "Submit": function () {
-      var terms = $("#searchTerms").val();
-      terms = terms.replace(/,\s/g, ','); // Remove spaces after a comma.
-      $(this).dialog("close");
-      if(g_searchTerms !== '') {
-        g_searchTerms += ',';
-      }
-      g_searchTerms += terms;
-      console.log(terms);
-    },
-  },
-  close: function () {
-    var html = '';
-    var terms = g_searchTerms.split(',');
-    for(var term in terms) {
-      html += "<span class='search-term'>" + terms[term] + "</span>";
-    }
-    $("#searchTermsSpans").html(html);
-    $("#map3d").show();
-    twitterStream = startTwitterStream(g_searchTerms);
-  }
-});
-
-  $("#changeSearchTermsButton").button().click(function(event){
+  $("#changeSearchTermsButton").button().click(function (event) {
     event.preventDefault();
     $("#map3d").hide();
     $("#dialog-form").dialog("open");
   });
 
-  //g_searchTerms = $("#searchTerms"), allFields = $([]).add(g_searchTerms);
+  //g_keywords = $("#searchTerms"), allFields = $([]).add(g_keywords);
   tips = $(".validateTips");
 
   function updateTips(t) {
     tips.text(t).addClass("ui-state-highlight");
-    setTimeout(function() {
+    setTimeout(function () {
       tips.removeClass("ui-state-highlight", 1500);
     }, 500);
   }
@@ -153,14 +162,14 @@ function tweetOnMap() {
 
 function loadPage() {
   //flickrTerms can be a comma separated list
-  flickrTerms = g_searchTerms;
+  flickrTerms = g_keywords.toString();
   flickrTagMode = "all";
   flickrUrl = "./flickr/" + flickrTerms + "/" + flickrTagMode;
 
   $(".dragStar").draggable();
   $(".resizeStar").resizable();
   $("#storeNews").load("./googleTopWorldNews");
-  //$("#tweets").load("./tweets/" + g_searchTerms + "");
+  //$("#tweets").load("./tweets/" + g_keywords + "");
   $("#gohere").load("./twitter-earth");
   $("#news marquee").load("./news");
 
@@ -168,12 +177,10 @@ function loadPage() {
   $("#slideshow").load(flickrUrl);
 
   //google.setOnLoadCallback(geInit);
-
-  $("#tweetTitle").html("Live " + g_searchTerms + " Tweets");
-  $("#imagesTitle").html(g_searchTerms + " Images");
-
+  //$("#tweetTitle").html("Live " + g_keywords + " Tweets");
+  //$("#imagesTitle").html(g_keywords + " Images");
   // *************SLIDESHOWS**********************
-  setInterval(function() {
+  setInterval(function () {
     var $active = $('#slideshow IMG.active');
 
     if($active.length == 0) $active = $('#slideshow IMG:last');
@@ -191,7 +198,7 @@ function loadPage() {
       opacity: 0.0
     }).addClass('active').css("max-width", $('#slideshow').width()).css("max-height", $('#slideshow').height()).animate({
       opacity: 1.0
-    }, 1000, function() {
+    }, 1000, function () {
       $active.removeClass('active last-active');
     });
     // $active.hide();
@@ -200,14 +207,13 @@ function loadPage() {
 
 
 
-
   // Tell the server to close on Window Unload...
-  $(window).unload(function() {
+  $(window).unload(function () {
     twitterStream.close();
   });
 
 
-  setInterval(function() {
+  setInterval(function () {
     $("#news marquee").load("./news");
     //$("#news").marquee();
   }, 120000);
@@ -215,10 +221,10 @@ function loadPage() {
 
   //pull in our initial google earth tweet after 4 seconds
   //  setTimeout(function() {
-  //      setNewTweet(g_searchTerms);
+  //      setNewTweet(g_keywords);
   //    }, 4000);
-  setTimeout(function() {
-    $("#storeNews").load("./googleTopWorldNews", function() {});
+  setTimeout(function () {
+    $("#storeNews").load("./googleTopWorldNews", function () {});
     $("#googleNews").fadeOut();
     $("#googleNews").html('');
     $("#s_INTERESTING").clone().appendTo($("#googleNews"));
@@ -228,14 +234,14 @@ function loadPage() {
 
 
   //pull in new google earth tweet every 30 seconds (without authenticating we can only do about 1 request every 24 seconds)
-  setInterval(function() {
+  setInterval(function () {
     tweetOnMap();
   }, 15000);
 
 
   //refresh google news every 1 hour
-  setInterval(function() {
-    $("#storeNews").load("http://news.google.com/news/section?pz=1&cf=all&ned=us&topic=w&output=html", function() {
+  setInterval(function () {
+    $("#storeNews").load("http://news.google.com/news/section?pz=1&cf=all&ned=us&topic=w&output=html", function () {
 
     });
     $("#googleNews").fadeOut();
@@ -248,19 +254,18 @@ function loadPage() {
 }
 
 // Update WordCloud every 10 minutes
-setInterval(function(){
-    $("#wordcloud").html('');
-    $.getJSON("/getWordCloudWords/" + g_searchTerms, function(data, text, obj){
-      $("#wordcloud").jQCloud(data);
-    });
-  }, 30 * 1000);
-
+setInterval(function () {
+  $("#wordcloud").html('');
+  $.getJSON("/getWordCloudWords/", function (data, text, obj) {
+    $("#wordcloud").jQCloud(data);
+  });
+}, 30 * 1000);
   </script>
 </head>
 <body style="background-color: black;">
   <div id="level1top" class="">
-    <div id="g_searchTermsContainer" class="content-wrapper">
-    <div id="g_searchTermsSpans">
+    <div id="keywordsContainer" class="content-wrapper">
+    <div id="keywordsSpans">
     </div>
     <input id='changeSearchTermsButton' type="submit" style="float: right;" value="New Search Term"/>
     </div>
@@ -307,7 +312,7 @@ setInterval(function(){
 
     <form>
       <fieldset>
-        <label for="g_searchTerms">Enter Interest</label>
+        <label for="keywords">Enter Interest</label>
         <input type="text" name="searchTerms" id="searchTerms" class="text ui-widget-content ui-corner-all" />
       </fieldset>
     </form>
