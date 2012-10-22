@@ -1,4 +1,9 @@
-var twitterHandler = function(dbModel) {
+var glossary = require("glossary")({
+    collapse: true,
+    blacklist: ["rt", "http", "www"]
+});
+
+var twitterHandler = function (dbModel) {
         var keywordsModel = dbModel;
         // Load nTwitter Library for easy Twitter API access.
         var twitter = require("ntwitter");
@@ -17,42 +22,52 @@ var twitterHandler = function(dbModel) {
         var currentKeywordsString = '';
 
         var startStreamToClient = function (req, res) {
-                myEmitter.on('streamFromTwitterStarted', function(){
-                    // Setup an Event-Stream to Client
-                    res.writeHead(200, {
+                // Setup an Event-Stream to Client
+                res.writeHead(200, {
                         'Content-Type': 'text/event-stream',
                         'Cache-Control': 'no-cache',
                         'Connection': 'keep-alive'
-                    });
-                    res.write('\n');
+                });
+                res.write('\n');
 
+                myEmitter.once('streamFromTwitterActive', function () {
+                    console.log("Client Sending Started");
                     // Used to rate-limit sending of events to the client.
                     var sentRecently = false;
 
+                    var callback = function (t) {
+                        // Check to be sure rate-limit flag isn't set.
+                        if(!sentRecently) {
+                            // Only compile the information we need to send
+                            // (Tweet objects are huge!)
+                            var smallTweet = {
+                                "user": t.user.name,
+                                "img_url": t.user.profile_image_url,
+                                "coordinates": t.coordinates,
+                                "text": t.text
+                            };
+                            // Send Data to Client
+                            res.write("data: " + JSON.stringify(smallTweet) + '\n\n');
+
+                            console.log("Sent Tweet");
+
+                            // Rate Limiting
+                            sentRecently = true;
+                            setTimeout(function () {
+                                sentRecently = false;
+                            }, 5000);
+                        }
+                    };
+
+                    // Queue up the action for when we lose Client Connection
+                    req.on("close", function() {
+                        console.log("INFO: Received Browser Close Event. Shutting Down Stream To Client.");
+                        res.end();
+                        tStreamEmitter.removeListener('data', callback);
+                    });
+
                     if(tStreamEmitter) {
-                        tStreamEmitter.on('data', function (t) {
-                            // Check to be sure rate-limit flag isn't set.
-                            if(!sentRecently) {
-                                // Only compile the information we need to send
-                                // (Tweet objects are huge!)
-                                var smallTweet = {
-                                    "user": t.user.name,
-                                    "img_url": t.user.profile_image_url,
-                                    "coordinates": t.coordinates,
-                                    "text": t.text
-                                };
-                                // Send Data to Client
-                                res.write("data: " + JSON.stringify(smallTweet) + '\n\n');
-
-                                console.log("Sent Tweet");
-
-                                // Rate Limiting
-                                sentRecently = true;
-                                setTimeout(function () {
-                                    sentRecently = false;
-                                }, 5000);
-                            }
-                        });
+                        tStreamEmitter.on('data', callback);
                     } else {
                         console.log("ERROR: Couldn't start stream to client because there's no stream from Twitter.");
                     }
@@ -63,29 +78,36 @@ var twitterHandler = function(dbModel) {
             };
 
 
-        var startStreamFromTwitter = function (keywords) {
+        var startStreamFromTwitter = function () {
                 // Build the Keywords String from the active keywords in the DB
                 var newKeywordsString = '';
-                keywordsModel.find({isActive: true}, function (err, results) {
-                    for(var i in results) {
-                        newKeywordsString += results[i].keyword + ',';
-                    }
-                    newKeywordsString = newKeywordsString.slice(0, newKeywordsString.length-1);
+                keywordsModel
+                    .find({isActive: true})
+                    .sort({keyword: 1})
+                    .exec(function (err, results) {
+                        for(var i in results) {
+                            newKeywordsString += results[i].keyword + ',';
+                        }
+                        newKeywordsString = newKeywordsString.slice(0, newKeywordsString.length - 1);
 
-                    console.log(newKeywordsString);
-                    myEmitter.emit('keywordsStringUpdated');
-                });
+                        console.log(newKeywordsString);
+                        myEmitter.emit('keywordsStringUpdated');
+                    });
 
-                myEmitter.on('keywordsStringUpdated', function(){
+                myEmitter.on('keywordsStringUpdated', function () {
                     if(newKeywordsString === '') {
                         console.error("ERROR: No Keywords. Can't start Twitter Stream.");
+                        if(tStreamEmitter) tStreamEmitter.destroy();
                         return;
-                    } else if(newKeywordsString === currentKeywordsString && tStream) {
+                    } else if((newKeywordsString === currentKeywordsString) && tStreamEmitter) {
                         console.info("INFO: Keywords Unchanged. No need to restart stream from Twitter.");
                         return;
                     } else {
                         // Store the New Keywords
                         currentKeywordsString = newKeywordsString;
+
+                        // Close the old connection.
+                        if(tStreamEmitter) tStreamEmitter.destroy();
 
                         // Build the connection to Twitter
                         tStream = twit.stream('statuses/filter', {
@@ -99,7 +121,28 @@ var twitterHandler = function(dbModel) {
 
                             streamEmitter.on('data', function (t) {
                                 if(t.text) {
-                                    var tweetWords = t.text.split(" ");
+                                    myEmitter.emit('streamFromTwitterActive');
+
+                                    var text = t.text;
+
+                                    // Remove "RT @xxxx" (retweet) tags
+                                    text = text.replace(/RT\s@(\S+)\s/ig, '');
+
+                                    // Remove HTML entities
+                                    text = text.replace(/&(\w+);/ig, '');
+
+                                    // Remove single numbers (not meaningful to us...)
+                                    text = text.replace(/\s([0-9]+)\s/ig, '');
+
+                                    // Remove Hyperlinks
+                                    var urlRegEx = /(\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/ig;
+                                    text = text.replace(urlRegEx, '');
+
+                                    // Remove non-alphanumeric characters
+                                    text = text.replace(/\W/ig, ' ');
+
+                                    var tweetWords = glossary.extract(text);
+                                    //var tweetWords = text.split(' ');
 
                                     // Find the keywords this was for.
                                     keywordsModel.find({
@@ -109,8 +152,7 @@ var twitterHandler = function(dbModel) {
                                         for(var i in activeKeywords) {
                                             // If the keyword is in this tweet, store the tweet in this keyword's bank.
                                             for(var j in tweetWords) {
-                                                if(tweetWords[j] == activeKeywords[i].keyword){
-                                                    console.log(activeKeywords[i].words);
+                                                if(tweetWords[j] == activeKeywords[i].keyword) {
                                                     activeKeywords[i].addText(tweetWords);
                                                     //console.info("INFO: Stored tweet text under keyword ", activeKeywords[i].keyword);
                                                     break;
@@ -135,7 +177,6 @@ var twitterHandler = function(dbModel) {
                         });
 
                         console.log("INFO: Stream from Twitter Started.");
-                        myEmitter.emit('streamFromTwitterStarted');
                     }
                 });
             };
@@ -167,6 +208,7 @@ var twitterHandler = function(dbModel) {
                     } else if(t.user.location) {
                         // If we only have an address (or City/State), Geocode w/ Google for a lat/Long
                         request('https://maps.googleapis.com/maps/api/geocode/json?address=' + t.user.location + '&sensor=false', function (error, response, body) {
+                            if(error) console.error(error);
                             resultsJSON = JSON.parse(body);
                             if(resultsJSON.status == 'OK') {
                                 // Add a little variance so the placemarks don't stack.
@@ -199,6 +241,6 @@ var twitterHandler = function(dbModel) {
             startStreamToClient: startStreamToClient,
             getGeoTweet: getGeoTweet
         };
-};
+    };
 
 module.exports = twitterHandler;

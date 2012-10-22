@@ -1,84 +1,144 @@
+var DEBUG = false;
+
 var express = require("express");
 var app = express();
 
 var request = require("request"); //for doing http gets.. in this case to get google top 10
-
 var Flickr = require('flickr').Flickr;
 var fconf = require("./conf/flickrconf");
 var flickrKey = fconf.getConf()['consumer_key'];
 var flickrSecret = fconf.getConf()['consumer_sercret'];
 var flickr = new Flickr(flickrKey, flickrSecret);
 
-var glossary = require("glossary")({
-    verbose: true,
-    collapse: true,
-    minFreq: 5,
-    blacklist: ["rt", "http", "www"]
-});
-
 var NUM_WORDS_IN_CLOUD = 50;
 
 
 // Database Setup
-var mongoose = require('mongoose'), db = mongoose.createConnection("localhost", "test");
+var mongoose = require('mongoose');
+var db = mongoose.createConnection("localhost", "test");
+if(DEBUG) mongoose.set('debug', true);
 db.on('error', console.error.bind(console, 'connection error.'));
 
-// DB Open.
+// Schemas
 var WordSchema = new mongoose.Schema({
-    word: 'string',
-    count: 'number'
+    // Mongoose only provides access via the _id field,
+    // so that's where we store the word.
+    _id: 'string',
+    count: { type: 'number', default: 1 }
 });
 
 var KeywordSchema = new mongoose.Schema({
     keyword: 'string',
     isActive: 'boolean',
-    words: [WordSchema]
+    wordbank: [WordSchema]
 });
 
 
+// DB Model Methods
 // Pass in array of words/phrases to store.
-KeywordSchema.methods.addText = function(words, cb){
-    var localCallback = function (err, numberAffected, raw) {
-        if (err) console.log(err);
-        console.log('The number of updated documents was %d', numberAffected);
-        console.log('The raw response from Mongo was ', raw);
-    };
-
+KeywordSchema.methods.addText = function (textToStore, cb) {
     // Store Words in DB
-    for(var i in words){
-        // Using "Upsert", meaning:
-        // If word in database, increment it's 'count' by 1,
-        // Else, insert the word with a 'count' of 1.
-        this.update({"words.word": words[i]}, {$inc: {count: 1} }, {upsert: true}, localCallback);
+    for(var i in textToStore) {
+        var doc = this.wordbank.id(textToStore[i]);
+        if(doc) {
+            doc.count++;
+            this.save();
+        } else {
+            this.wordbank.push({
+                _id: textToStore[i]
+            });
+            this.save();
+        }
     }
 
     // If we got passed a callback, call it.
-    if(cb){cb();}
+    if(cb) {
+        cb();
+    }
 };
 
 
-KeywordSchema.statics.activateKeywords = function(keywords, cb){
-    var localCallback = function (err, numberAffected, raw) {
-        if (err) console.log(err);
-        console.log('The number of updated documents was %d', numberAffected);
-        console.log('The raw response from Mongo was ', raw);
-    };
-
-    for(var i in keywords){
-        this.update({keyword: keywords[i]}, {isActive: true}, { upsert: true }, localCallback);
+KeywordSchema.statics.activateKeywords = function (keywords, cb) {
+    for(var i in keywords) {
+        this.update({
+            keyword: keywords[i]
+        }, {
+            isActive: true
+        }, {
+            upsert: true
+        }, function (err){
+            if(err) console.log(err);
+        });
     }
-    if(cb){cb();}
+
+    if(cb) {
+        cb();
+    }
+};
+
+KeywordSchema.statics.deactivateKeywords = function (keywords, cb) {
+    for(var i in keywords) {
+        this.update({
+            keyword: keywords[i]
+        }, {
+            isActive: false
+        }, {
+            upsert: false
+        }, function (err){
+            if(err) console.log(err);
+        });
+    }
+
+    if(cb) {
+        cb();
+    }
+};
+
+
+KeywordSchema.statics.getHighestCountWords = function (cb, numWords) {
+    numWords = typeof numWords !== 'undefined' ? a : 50; // Default 50 words if not passed in.
+    out = [];
+
+    this.aggregate(
+        { $match: {isActive: true} },
+        { $unwind: "$wordbank" },
+        { $project: {word: '$wordbank._id', count: '$wordbank.count'} },
+        { $sort: {count: -1} },
+        { $limit: numWords },
+        function (err, res) {
+            if(err) console.error(err);
+
+            for(var i in res) {
+                out.push({
+                    text: res[i].word,
+                    weight: res[i].count
+                });
+            }
+
+            cb(out);
+        }
+    );
+};
+
+KeywordSchema.statics.getActiveKeywords = function(cb){
+    var out = [];
+    this.find({isActive: true}, function(err, res){
+        for(var i in res){
+            out.push(res[i].keyword);
+        }
+
+        cb(out);
+    });
 };
 
 var KeywordsModel = db.model('Keyword', KeywordSchema);
 
-
-var twitter = require("./handlers/twitterHandler.js")(KeywordsModel);//({ wordBucket: g_wordBucket, wordBucketWord: g_wordBucketWord });
+var twitter = require("./handlers/twitterHandler.js")(KeywordsModel);
 var ozone = require("./handlers/ozoneHandler.js");
 
 
 // Setup
-app.configure(function(){
+app.configure(function () {
     app.set('views', __dirname + '/views');
     app.set('view engine', 'jade');
 });
@@ -88,38 +148,24 @@ app.configure(function(){
 app.use("/static", express.static(__dirname + '/static'));
 
 // TODO: Do better than this...
-app.get("/googleTopWorldNews", function(req, res) {
-    request('http://news.google.com/news/section?pz=1&cf=all&ned=us&topic=w&output=html', function(error, response, body) {
+app.get("/googleTopWorldNews", function (req, res) {
+    request('http://news.google.com/news/section?pz=1&cf=all&ned=us&topic=w&output=html', function (error, response, body) {
         if(!error && response.statusCode == 200) {
             res.end(body); // Print the google world news webpage
         }
     });
 });
 
-// Note: app.all catches get, post, etc...
-app.all('/ozone/twitterStream', function(req, res){
-    res.render('twitterStream.jade');
-});
-
-// If not Ozone...
-app.all('/twitterStream', function(req, res){
-    var keywords = null;
-    var s = req.param('keywords');
-    
-    console.log("INFO: Keywords passed as query parameters to /twitterstream --> ", s);
-    
-    if(s) keywords = s.split(',');
-
-    KeywordsModel.activateKeywords(keywords);
+app.all('/twitterStream', function (req, res) {
     twitter.startStreamToClient(req, res);
     twitter.startStreamFromTwitter();
 });
 
-app.all("/getGeoTweet", function(req, res) {
+app.all("/getGeoTweet", function (req, res) {
     twitter.getGeoTweet(req, res);
 });
 
-app.get("/news", function(req, res) {
+app.get("/news", function (req, res) {
     // twitter.get('search', {
     //     q: "BreakingNews",
     //     result_type: 'recent',
@@ -140,14 +186,14 @@ app.get("/news", function(req, res) {
     // });
 });
 
-app.get("/trendywall", function(req, res) {
+app.get("/trendywall", function (req, res) {
     res.render("trendywall.ejs", {
         layout: false
     });
 });
 
 
-app.get("/flickr/:query/:tagMode", function(req, res) {
+app.get("/flickr/:query/:tagMode", function (req, res) {
     var pixel_map = {
         "s": "75",
         "q": "150",
@@ -168,12 +214,13 @@ app.get("/flickr/:query/:tagMode", function(req, res) {
         mode = "any";
     }
 
-    var query = encodeURIComponent(req.params['query'].replace(",", " "));
+
+    var query = unescape(req.param('query')).split(',');
     console.log(query);
     flickr.executeAPIRequest("flickr.photos.search", {
         tags: query,
         tag_mode: mode
-    }, true, function(err, reply) {
+    }, true, function (err, reply) {
 
         if(err !== null) {
             console.log("errors in getting flickr photos" + err);
@@ -209,77 +256,51 @@ app.get("/flickr/:query/:tagMode", function(req, res) {
 });
 
 // Word Cloud Word Generation
-app.get("/getWordcloudWords/:word", function(req, res) {
-    res.type("text/plain");
-    return;
-    // Get links (so we can scrape them later...)
-     var urlRegEx = /(\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/ig;
-    // var links = g_wordBucket.match(urlRegEx);
-
-    // function getLink(url) {
-    //     jsdom.env({
-    //         html: url,
-    //         scripts: ["http://code.jquery.com/jquery.js"],
-    //         done: function(errors, window) {
-    //             var $ = window.$;
-    //             $("script").remove();
-    //             $("style").remove();
-    //             g_wordBucket += $("body").text();
-    //         }
-    //     });
-    // }
-
-    // for(var l in links) {
-    //     getLink(links[l]);
-    // }
-
-    //console.log(links);
-
-    // Remove "RT @xxxx" (retweet) tags
-    g_wordBucket = g_wordBucket.replace(/RT\s@(\S+)\s/ig, '');
-
-    // Remove HTML entities
-    g_wordBucket = g_wordBucket.replace(/&(\w+);/ig, '');
-
-    // Remove single numbers (not meaningful to us...)
-    g_wordBucket = g_wordBucket.replace(/\s([0-9]+)\s/ig, '');
-
-    // Remove Hyperlinks
-    g_wordBucket = g_wordBucket.replace(urlRegEx, '');
-
-    // Remove non-alphanumeric characters
-    g_wordBucket = g_wordBucket.replace(/\W/ig, ' ');
-
-    // Use Glossary to crawl and index the word bucket.
-    var words = glossary.extract(g_wordBucket.toLowerCase());
-
-    // Sort the words output from Glossary
-    words.sort(function(a, b) {
-        return b.count - a.count;
-    });
-
-    // Change the key names for JQCloud.
-    for(var w in words){
-        words[w].text = words[w].word;
-        delete words[w].word;
-        words[w].weight = words[w].count;
-        delete words[w].count;
+var g_wordcloudOnTimeout = false;
+var g_wordcloudWords = null;
+app.get("/getWordcloudWords", function (req, res) {
+    if(!g_wordcloudOnTimeout){
+        KeywordsModel.getHighestCountWords(function (words) {
+            g_wordcloudWords = words;
+            res.end(JSON.stringify(g_wordcloudWords));
+        });
+        g_wordcloudOnTimeout = true;
+        setTimeout(function(){
+            g_wordcloudOnTimeout = false;
+        }, 60 * 1000);
+    } else {
+        console.log("INFO: Wordcloud Words Not Regenerated (on Timeout).");
+        res.end(JSON.stringify(g_wordcloudWords));
     }
-
-    // Return.
-    res.end(JSON.stringify(words));
 });
 
-app.get("/getActiveSearchTerms", function(req, res){
-    var out = [];
-    KeywordsModel.find({isActive: true}, function(err, results){
-        for(var i in results){
-            out.push(results[i].word);
-        }
+app.get("/getActiveKeywords", function (req, res) {
+    KeywordsModel.getActiveKeywords(function(words){
+        res.end(JSON.stringify(words));
     });
-
-    res.end(JSON.stringify(out));
 });
+
+app.get("/activateKeywords", function (req, res){
+    var keywords = null;
+    var s = req.param('keywords');
+    if(s) keywords = s.split(',');
+
+    KeywordsModel.activateKeywords(keywords);
+});
+
+app.get("/deactivateKeywords", function(req, res){
+    var keywords = null;
+    var s = req.param('keywords');
+    if(s) keywords = s.split(',');
+
+    KeywordsModel.deactivateKeywords(keywords);
+});
+
+app.get("/test", function (req, res) {
+
+
+});
+
 
 //process.env.PORT is a cloud9 thing. Use your own port (ex 9999) if on a normal platform.
 app.listen(3000);

@@ -33,31 +33,87 @@ function getKeywordsString(inArray) {
 }
 
 function startTwitterStream() {
-
-
-  var url = '/twitterStream?keywords=' + escape(keywordsString);
-  console.log(url);
+  var url = '/twitterStream?keywords=' + escape(getKeywordsString());
   var source = new EventSource(url);
   source.addEventListener('message', function (e) {
+
     var tweet = $.parseJSON(e.data);
 
     // Note "<" + "/xx>"" tags seperated to comply with HTML W3 specs.
-    var div = "<div class='newtweet tweet' style='display: none;'>" + "<img class='tweet-pic' src='" + tweet.img_url + "'/>" + "<div class='tweet-text'>" + "<span class='tweet-user'>" + tweet.user + "<" + "/span><br />" + "<span>" + tweet.text + "<" + "/span>" + "<" + "/div>" + "<" + "/div>";
+    var div = "<div class='newtweet tweet' style='display: none;'>"+
+                "<img class='tweet-pic' src='" + tweet.img_url + "'/>"+
+                "<div class='tweet-text'>"+
+                  "<span class='tweet-user'>" + tweet.user + "<" + "/span><br />"+
+                  "<span>" + tweet.text + "<" + "/span>"+
+                "<" + "/div>"+
+              "<" + "/div>";
 
-    $("#tweets").prepend();
-
+    $("#tweets").prepend(div);
     $(".newtweet").show("slide", {
       direction: "up"
-    }, 500).removeClass("newtweet");
+    }, 1000).removeClass("newtweet");
   }, false);
+
+  // THIS IS BROKEN
+  // Don't keep an infinite number of tweets around...
+  //setTimeout(function(){
+  //  $("#tweets div").html($("#tweets div").slice(0,100).html());
+  //}, 10000);
 }
+
+function displayKeywords(){
+  var html = '';
+  for(var i in g_keywords) {
+    html += "<span class='search-term'>" + g_keywords[i] + "<" + "/span>";
+  }
+  $("#keywordsSpans").html(html);
+}
+
+function runAfterNewKeywords() {
+  displayKeywords();
+  g_twitterStream = startTwitterStream();
+  startFlickrStream();
+}
+
+
+function startFlickrStream(){
+  $("#slideshow").html('');
+  //flickrTerms can be a comma separated list
+  flickrTerms = getKeywordsString();
+  flickrTagMode = "any";
+  flickrUrl = "./flickr/" + escape(flickrTerms) + "/" + flickrTagMode;
+  $("#slideshow").load(flickrUrl);
+
+  // *************SLIDESHOWS**********************
+  setInterval(function () {
+    var $active = $('#slideshow IMG.active');
+
+    if($active.length == 0) $active = $('#slideshow IMG:last');
+
+    // use this to pull the images in the order they appear in the markup
+    var $next = $active.next().length ? $active.next() : $('#slideshow IMG:first');
+
+    // uncomment the 3 lines below to pull the images in random order
+    // var $sibs  = $active.siblings();
+    // var rndNum = Math.floor(Math.random() * $sibs.length );
+    // var $next  = $( $sibs[ rndNum ] );
+    $active.addClass('last-active');
+
+    $next.css({
+      opacity: 0.0
+    }).addClass('active').css("max-width", $('#slideshow').width()).css("max-height", $('#slideshow').height()).animate({
+      opacity: 1.0
+    }, 1000, function () {
+      $active.removeClass('active last-active');
+    });
+    // $active.hide();
+    // $next.show();
+  }, 10000);
+}
+
 
 //Everything in this functions runs immediately on load
 $(function () {
-  // $.getJSON('/getActiveSearchTerms', function(data){
-  //   g_keywords = data;
-  // });
-
   $("#dialog-form").dialog({
     autoOpen: false,
     show: "fade",
@@ -77,19 +133,22 @@ $(function () {
             g_keywords.push(termsArray[i].trim());
           }
         }
+        g_keywords.sort();
         console.log(g_keywords);
       },
     },
     close: function () {
-      var html = '';
-      for(var i in g_keywords) {
-        html += "<span class='search-term'>" + g_keywords[i] + "<" + "/span>";
-      }
-      $("#keywordsSpans").html(html);
       $("#map3d").show();
-      twitterStream = startTwitterStream();
+      afterNewKeywords();
     }
   });
+
+
+  $.getJSON('/getActiveKeywords', function(data){
+     g_keywords = data;
+     runAfterNewKeywords();
+  });
+
 
   $("#changeSearchTermsButton").button().click(function (event) {
     event.preventDefault();
@@ -161,52 +220,6 @@ function tweetOnMap() {
 
 
 function loadPage() {
-  //flickrTerms can be a comma separated list
-  flickrTerms = g_keywords.toString();
-  flickrTagMode = "all";
-  flickrUrl = "./flickr/" + flickrTerms + "/" + flickrTagMode;
-
-  $(".dragStar").draggable();
-  $(".resizeStar").resizable();
-  $("#storeNews").load("./googleTopWorldNews");
-  //$("#tweets").load("./tweets/" + g_keywords + "");
-  $("#gohere").load("./twitter-earth");
-  $("#news marquee").load("./news");
-
-
-  $("#slideshow").load(flickrUrl);
-
-  //google.setOnLoadCallback(geInit);
-  //$("#tweetTitle").html("Live " + g_keywords + " Tweets");
-  //$("#imagesTitle").html(g_keywords + " Images");
-  // *************SLIDESHOWS**********************
-  setInterval(function () {
-    var $active = $('#slideshow IMG.active');
-
-    if($active.length == 0) $active = $('#slideshow IMG:last');
-
-    // use this to pull the images in the order they appear in the markup
-    var $next = $active.next().length ? $active.next() : $('#slideshow IMG:first');
-
-    // uncomment the 3 lines below to pull the images in random order
-    // var $sibs  = $active.siblings();
-    // var rndNum = Math.floor(Math.random() * $sibs.length );
-    // var $next  = $( $sibs[ rndNum ] );
-    $active.addClass('last-active');
-
-    $next.css({
-      opacity: 0.0
-    }).addClass('active').css("max-width", $('#slideshow').width()).css("max-height", $('#slideshow').height()).animate({
-      opacity: 1.0
-    }, 1000, function () {
-      $active.removeClass('active last-active');
-    });
-    // $active.hide();
-    // $next.show();
-  }, 10000);
-
-
-
   // Tell the server to close on Window Unload...
   $(window).unload(function () {
     twitterStream.close();
@@ -256,7 +269,7 @@ function loadPage() {
 // Update WordCloud every 90 sec
 setInterval(function(){
     $("#wordcloud").html('');
-    $.getJSON("/getWordCloudWords/" + searchTerms, function(data, text, obj){
+    $.getJSON("/getWordCloudWords/", function(data, text, obj){
       if(data){
         $("#wordcloud").jQCloud(data);
       }
@@ -311,12 +324,11 @@ setInterval(function(){
   </div>
   <div id="mapTweet" style="visibility:hidden;"></div>
   <div id="dialog-form" title="Areas of Interest">
-    <p class="validateTips"><!--Use commas between multiple interests--></p>
-
+    <p class="validateTips">Use commas between multiple interests</p>
     <form>
       <fieldset>
-        <label for="keywords">Enter Interest</label>
-        <input type="text" name="searchTerms" id="searchTerms" class="text ui-widget-content ui-corner-all" />
+        <label for="keywords">Enter Interest(s):</label>
+        <input type="text" name="searchTerms" id="searchTerms" style="width: auto;" class="text ui-widget-content ui-corner-all" />
       </fieldset>
     </form>
   </div>
