@@ -33,8 +33,9 @@ function getKeywordsString(inArray) {
 }
 
 function startTwitterStream() {
+  if(g_twitterStream) g_twitterStream.close();
   var url = '/twitterStream?keywords=' + escape(getKeywordsString());
-  var source = new EventSource(url);
+  var source = g_twitterStream = new EventSource(url);
   source.addEventListener('message', function (e) {
 
     var tweet = $.parseJSON(e.data);
@@ -67,6 +68,7 @@ function displayKeywords(){
     html += "<span class='search-term'>" + g_keywords[i] + "<" + "/span>";
   }
   $("#keywordsSpans").html(html);
+  $("#searchTerms").val(getKeywordsString());
 }
 
 function runAfterNewKeywords() {
@@ -81,7 +83,7 @@ function startFlickrStream(){
   //flickrTerms can be a comma separated list
   flickrTerms = getKeywordsString();
   flickrTagMode = "any";
-  flickrUrl = "./flickr/" + escape(flickrTerms) + "/" + flickrTagMode;
+  flickrUrl = "./flickr?keywords=" + escape(flickrTerms) + "&tagMode=" + flickrTagMode;
   $("#slideshow").load(flickrUrl);
 
   // *************SLIDESHOWS**********************
@@ -127,19 +129,51 @@ $(function () {
         terms = terms.replace(/,\s/g, ','); // Remove spaces after a comma.
         $(this).dialog("close");
 
-        termsArray = terms.split(",");
-        for(var i in termsArray) {
-          if($.inArray(termsArray[i], g_keywords) == -1) {
-            g_keywords.push(termsArray[i].trim());
-          }
-        }
+        g_keywords = terms.split(",");
         g_keywords.sort();
         console.log(g_keywords);
       },
     },
     close: function () {
       $("#map3d").show();
-      afterNewKeywords();
+
+      $.getJSON('/getActiveKeywords', function(wordsFromServer){
+        var toActivate = [];
+        var toActivateString = '';
+        var toDeactivate = [];
+        var toDeactivateString = '';
+
+        console.log("KE: ", g_keywords);
+        for(var i in g_keywords){
+          if($.inArray(g_keywords[i], wordsFromServer) == -1){
+            toActivate.push(g_keywords[i]);
+          }
+        }
+
+        for(var i in wordsFromServer){
+          if($.inArray(wordsFromServer[i], g_keywords) == -1){
+            toDeactivate.push(wordsFromServer[i]);
+          }
+        }
+
+        for(var i in toActivate){
+          toActivateString += toActivate[i] + ',';
+        }
+        toActivateString = toActivateString.slice(0,toActivateString.length-1);
+
+        for(var i in toDeactivate){
+          toDeactivateString += toDeactivate[i] + ',';
+        }
+        toDeactivateString = toDeactivateString.slice(0,toDeactivateString.length-1);
+
+        console.log("ToAct: ", toActivateString);
+        console.log("ToDeAct: ", toDeactivateString);
+
+        $.get("/activateKeywords?keywords=" + escape(toActivateString));
+        $.get("/deactivateKeywords?keywords=" + escape(toDeactivateString));
+      })
+
+      runAfterNewKeywords();
     }
   });
 
@@ -283,7 +317,7 @@ setInterval(function(){
     <div id="keywordsContainer" class="content-wrapper">
     <div id="keywordsSpans">
     </div>
-    <input id='changeSearchTermsButton' type="submit" style="float: right;" value="New Search Term"/>
+    <input id='changeSearchTermsButton' type="submit" style="float: right;" value="Change Search Terms"/>
     </div>
   </div>
   <div id="level1middle" style="">
@@ -328,7 +362,7 @@ setInterval(function(){
     <form>
       <fieldset>
         <label for="keywords">Enter Interest(s):</label>
-        <input type="text" name="searchTerms" id="searchTerms" style="width: auto;" class="text ui-widget-content ui-corner-all" />
+        <input type="text" name="searchTerms" id="searchTerms" style="width: 100%;" class="text ui-widget-content ui-corner-all" />
       </fieldset>
     </form>
   </div>

@@ -4,20 +4,16 @@ var express = require("express");
 var app = express();
 
 var request = require("request"); //for doing http gets.. in this case to get google top 10
-var Flickr = require('flickr').Flickr;
-var fconf = require("./conf/flickrconf");
-var flickrKey = fconf.getConf()['consumer_key'];
-var flickrSecret = fconf.getConf()['consumer_sercret'];
-var flickr = new Flickr(flickrKey, flickrSecret);
 
 var NUM_WORDS_IN_CLOUD = 50;
 
 
 // Database Setup
 var mongoose = require('mongoose');
-var db = mongoose.createConnection("localhost", "test");
+var today = new Date();
+var dbConnection = mongoose.createConnection("localhost", "db"+today.getFullYear()+today.getMonth()+today.getDate());
 if(DEBUG) mongoose.set('debug', true);
-db.on('error', console.error.bind(console, 'connection error.'));
+dbConnection.on('error', console.error.bind(console, 'connection error.'));
 
 // Schemas
 var WordSchema = new mongoose.Schema({
@@ -60,6 +56,7 @@ KeywordSchema.methods.addText = function (textToStore, cb) {
 
 KeywordSchema.statics.activateKeywords = function (keywords, cb) {
     for(var i in keywords) {
+        console.log("INFO: Activating Keyword '" + keywords[i] + "'");
         this.update({
             keyword: keywords[i]
         }, {
@@ -78,6 +75,7 @@ KeywordSchema.statics.activateKeywords = function (keywords, cb) {
 
 KeywordSchema.statics.deactivateKeywords = function (keywords, cb) {
     for(var i in keywords) {
+        console.log("INFO: Deactivating Keyword '" + keywords[i] + "'");
         this.update({
             keyword: keywords[i]
         }, {
@@ -131,7 +129,7 @@ KeywordSchema.statics.getActiveKeywords = function(cb){
     });
 };
 
-var KeywordsModel = db.model('Keyword', KeywordSchema);
+var KeywordsModel = dbConnection.model('Keyword', KeywordSchema);
 
 var twitter = require("./handlers/twitterHandler.js")(KeywordsModel);
 var ozone = require("./handlers/ozoneHandler.js");
@@ -157,8 +155,8 @@ app.get("/googleTopWorldNews", function (req, res) {
 });
 
 app.all('/twitterStream', function (req, res) {
-    twitter.startStreamToClient(req, res);
     twitter.startStreamFromTwitter();
+    twitter.startStreamToClient(req, res);
 });
 
 app.all("/getGeoTweet", function (req, res) {
@@ -192,66 +190,17 @@ app.get("/trendywall", function (req, res) {
     });
 });
 
+var flickr = require("./handlers/flickrHandler.js")();
 
-app.get("/flickr/:query/:tagMode", function (req, res) {
-    var pixel_map = {
-        "s": "75",
-        "q": "150",
-        "t": "100",
-        "m": "240",
-        "n": "320",
-        "-": "500",
-        "z": "640",
-        "c": "800",
-        "b": "1024",
-        "o": "500"
-    };
-
-    var mode = req.params['tagMode'];
-    console.log("mode:" + mode);
-    //Only valid tag_modes are 'any' or 'all', default to 'any'
-    if(mode !== "all" || mode !== "any") {
-        mode = "any";
-    }
-
-
-    var query = unescape(req.param('query')).split(',');
-    console.log(query);
-    flickr.executeAPIRequest("flickr.photos.search", {
-        tags: query,
-        tag_mode: mode
-    }, true, function (err, reply) {
-
-        if(err !== null) {
-            console.log("errors in getting flickr photos" + err);
-        } else {
-            var picsToHTML = '';
-            var imgTagBeg = "<img src='";
-            var imgTagEndOne = "' class='active' style='display: none;'/>";
-            var imgTagEngOther = "' />";
-            var i = 0;
-            if(reply.photos.total < 100) {
-                i = reply.photos.total;
-            } else {
-                i = 100;
-            }
-            for(var k = 0; k < i; k++) {
-                //http://farm{farm-id}.staticflickr.com/{server-id}/{id}_{secret}.jpg
-                var p = reply.photos.photo[k];
-                var title = p.title;
-                var src = "http://farm" + p.farm + ".staticflickr.com/" + p.server + "/" + p.id + "_" + p.secret + ".jpg";
-                if(k == 1) {
-                    picsToHTML += imgTagBeg + src + imgTagEndOne;
-                } else {
-                    picsToHTML += imgTagBeg + src + imgTagEngOther;
-                }
-            }
-            if(!picsToHTML) {
-                picsToHTML = "<p>No photos were found matching your query.</p>";
-            }
-            //console.log(picsToHTML);
-            res.end(picsToHTML);
-        }
+// FLICKR STREAM
+// Requires Parameters:
+//    tagMode - 'any' or 'all'
+//    keywords - comma-delimited list
+app.get("/flickr", function (req, res) {
+    var tagMode = req.param('tagMode');
+    var queryWords = unescape(req.param('keywords')).split(',');
+    flickr.request(queryWords, tagMode, function(result){
+        res.end(result);
     });
 });
 
@@ -284,6 +233,7 @@ app.get("/activateKeywords", function (req, res){
     var keywords = null;
     var s = req.param('keywords');
     if(s) keywords = s.split(',');
+    else return;
 
     KeywordsModel.activateKeywords(keywords);
 });
@@ -292,6 +242,7 @@ app.get("/deactivateKeywords", function(req, res){
     var keywords = null;
     var s = req.param('keywords');
     if(s) keywords = s.split(',');
+    else return;
 
     KeywordsModel.deactivateKeywords(keywords);
 });
@@ -301,6 +252,10 @@ app.get("/test", function (req, res) {
 
 });
 
+// Every 15 seconds make sure Twitter feed's still up.
+setTimeout(function(){
+    twitter.startStreamFromTwitter();
+}, 15 * 1000);
 
 //process.env.PORT is a cloud9 thing. Use your own port (ex 9999) if on a normal platform.
 app.listen(3000);

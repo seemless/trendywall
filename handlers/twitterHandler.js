@@ -3,8 +3,9 @@ var glossary = require("glossary")({
     blacklist: ["rt", "http", "www"]
 });
 
-var twitterHandler = function (dbModel) {
+var TwitterHandler = function (dbModel) {
         var keywordsModel = dbModel;
+
         // Load nTwitter Library for easy Twitter API access.
         var twitter = require("ntwitter");
         var tconf = require("../conf/twitconf");
@@ -13,12 +14,15 @@ var twitterHandler = function (dbModel) {
         var request = require("request");
 
         var latestTweetWithLoc = null;
+
         var tStream = null;
         var tStreamEmitter = null;
+
         var sentRecently = false;
 
         var events = require('events');
-        var myEmitter = new events.EventEmitter();
+        var localEmitter = new events.EventEmitter();
+
         var currentKeywordsString = '';
 
         var startStreamToClient = function (req, res) {
@@ -30,8 +34,12 @@ var twitterHandler = function (dbModel) {
                 });
                 res.write('\n');
 
-                myEmitter.once('streamFromTwitterActive', function () {
-                    console.log("Client Sending Started");
+                if(tStreamEmitter) {
+                tStreamEmitter.on('data', callback);
+                    } else {
+                        console.log("ERROR: Couldn't start stream to client because there's no stream from Twitter.");
+                    }
+
                     // Used to rate-limit sending of events to the client.
                     var sentRecently = false;
 
@@ -62,18 +70,10 @@ var twitterHandler = function (dbModel) {
                     // Queue up the action for when we lose Client Connection
                     req.on("close", function() {
                         console.log("INFO: Received Browser Close Event. Shutting Down Stream To Client.");
+                        streamToClientActive = false;
                         res.end();
-                        tStreamEmitter.removeListener('data', callback);
+                        if(tStreamEmitter) tStreamEmitter.removeListener('data', callback);
                     });
-
-                    if(tStreamEmitter) {
-                        tStreamEmitter.on('data', callback);
-                    } else {
-                        console.log("ERROR: Couldn't start stream to client because there's no stream from Twitter.");
-                    }
-
-
-
                 });
             };
 
@@ -94,10 +94,11 @@ var twitterHandler = function (dbModel) {
                         myEmitter.emit('keywordsStringUpdated');
                     });
 
-                myEmitter.on('keywordsStringUpdated', function () {
+                myEmitter.once('keywordsStringUpdated', function () {
                     if(newKeywordsString === '') {
                         console.error("ERROR: No Keywords. Can't start Twitter Stream.");
                         if(tStreamEmitter) tStreamEmitter.destroy();
+                        tStreamEmitter = null;
                         return;
                     } else if((newKeywordsString === currentKeywordsString) && tStreamEmitter) {
                         console.info("INFO: Keywords Unchanged. No need to restart stream from Twitter.");
@@ -108,6 +109,7 @@ var twitterHandler = function (dbModel) {
 
                         // Close the old connection.
                         if(tStreamEmitter) tStreamEmitter.destroy();
+                        tStreamEmitter = null;
 
                         // Build the connection to Twitter
                         tStream = twit.stream('statuses/filter', {
@@ -117,6 +119,8 @@ var twitterHandler = function (dbModel) {
 
                             streamEmitter.on('error', function (data, details) {
                                 console.error("ERROR: Twitter streamEmitter Error -> ", data, details);
+                                if(tStreamEmitter) tStreamEmitter.destroy();
+                                tStreamEmitter = null;
                             });
 
                             streamEmitter.on('data', function (t) {
@@ -243,4 +247,4 @@ var twitterHandler = function (dbModel) {
         };
     };
 
-module.exports = twitterHandler;
+module.exports = TwitterHandler;

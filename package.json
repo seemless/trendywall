@@ -11,7 +11,8 @@
     "glossary",
     "feedparser",
     "async",
-    "ntwitter"
+    "ntwitter",
+    "mongoose"
   ],
   "main": "index.js"
 }
