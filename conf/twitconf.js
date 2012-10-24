@@ -7,4 +7,4 @@ module.exports =    {
             access_token_secret:  'HRftcCQPFg2LTa0yopoEcu2UdBGZy0VV8Pxr99VSVHk'
         };
     }
-}
+};

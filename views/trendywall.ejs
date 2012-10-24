@@ -20,7 +20,7 @@
 
 
 var g_keywords = [];
-var g_twitterStream = null;
+var g_twitterStreamSource = null;
 
 function getKeywordsString(inArray) {
   if(!inArray) inArray = g_keywords;
@@ -33,9 +33,9 @@ function getKeywordsString(inArray) {
 }
 
 function startTwitterStream() {
-  if(g_twitterStream) g_twitterStream.close();
+  if(g_twitterStreamSource) g_twitterStreamSource.close();
   var url = '/twitterStream?keywords=' + escape(getKeywordsString());
-  var source = g_twitterStream = new EventSource(url);
+  var source = g_twitterStreamSource = new EventSource(url);
   source.addEventListener('message', function (e) {
 
     var tweet = $.parseJSON(e.data);
@@ -73,7 +73,7 @@ function displayKeywords(){
 
 function runAfterNewKeywords() {
   displayKeywords();
-  g_twitterStream = startTwitterStream();
+  g_twitterStreamSource = startTwitterStream();
   startFlickrStream();
 }
 
