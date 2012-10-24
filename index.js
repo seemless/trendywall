@@ -235,7 +235,7 @@ app.get("/activateKeywords", function (req, res){
     if(s) keywords = s.split(',');
     else return;
 
-    KeywordsModel.activateKeywords(keywords);
+    KeywordsModel.activateKeywords(keywords, twitter.startStreamFromTwitter);
 });
 
 app.get("/deactivateKeywords", function(req, res){
@@ -244,18 +244,13 @@ app.get("/deactivateKeywords", function(req, res){
     if(s) keywords = s.split(',');
     else return;
 
-    KeywordsModel.deactivateKeywords(keywords);
+    KeywordsModel.deactivateKeywords(keywords, twitter.startStreamFromTwitter);
 });
 
 app.get("/test", function (req, res) {
 
 
 });
-
-// Every 15 seconds make sure Twitter feed's still up.
-setTimeout(function(){
-    twitter.startStreamFromTwitter();
-}, 15 * 1000);
 
 //process.env.PORT is a cloud9 thing. Use your own port (ex 9999) if on a normal platform.
 app.listen(3000);

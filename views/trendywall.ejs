@@ -18,7 +18,7 @@
 
   <script>
 
-
+var E = {}; // Empty element to handle our custom events.
 var g_keywords = [];
 var g_twitterStreamSource = null;
 
@@ -54,14 +54,10 @@ function startTwitterStream() {
       direction: "up"
     }, 1000).removeClass("newtweet");
   }, false);
-
-  // THIS IS BROKEN
-  // Don't keep an infinite number of tweets around...
-  //setTimeout(function(){
-  //  $("#tweets div").html($("#tweets div").slice(0,100).html());
-  //}, 10000);
 }
+$(E).on('newKeywords', startTwitterStream);
 
+// Display Keywords on notice that there's new ones.
 function displayKeywords(){
   var html = '';
   for(var i in g_keywords) {
@@ -70,12 +66,7 @@ function displayKeywords(){
   $("#keywordsSpans").html(html);
   $("#searchTerms").val(getKeywordsString());
 }
-
-function runAfterNewKeywords() {
-  displayKeywords();
-  g_twitterStreamSource = startTwitterStream();
-  startFlickrStream();
-}
+$(E).on('newKeywords', displayKeywords);
 
 
 function startFlickrStream(){
@@ -112,6 +103,13 @@ function startFlickrStream(){
     // $next.show();
   }, 10000);
 }
+$(E).on('newKeywords', startFlickrStream);
+
+
+
+
+
+
 
 
 //Everything in this functions runs immediately on load
@@ -137,7 +135,13 @@ $(function () {
     close: function () {
       $("#map3d").show();
 
-      $.getJSON('/getActiveKeywords', function(wordsFromServer){
+      // Notifty Listeners
+      $(E).trigger('newKeywords');
+    }
+  });
+
+  function sendKeywords(){
+    $.getJSON('/getActiveKeywords', function(wordsFromServer){
         var toActivate = [];
         var toActivateString = '';
         var toDeactivate = [];
@@ -156,31 +160,24 @@ $(function () {
           }
         }
 
-        for(var i in toActivate){
-          toActivateString += toActivate[i] + ',';
-        }
-        toActivateString = toActivateString.slice(0,toActivateString.length-1);
-
-        for(var i in toDeactivate){
-          toDeactivateString += toDeactivate[i] + ',';
-        }
-        toDeactivateString = toDeactivateString.slice(0,toDeactivateString.length-1);
-
+        toActivateString = toActivate.join();
+        toDeactivateString = toDeactivate.join();
         console.log("ToAct: ", toActivateString);
         console.log("ToDeAct: ", toDeactivateString);
 
         $.get("/activateKeywords?keywords=" + escape(toActivateString));
         $.get("/deactivateKeywords?keywords=" + escape(toDeactivateString));
-      })
-
-      runAfterNewKeywords();
-    }
-  });
+      });
+  }
+  $(E).on('newKeywords', sendKeywords);
 
 
+  // Get the server's current active keywords.
   $.getJSON('/getActiveKeywords', function(data){
-     g_keywords = data;
-     runAfterNewKeywords();
+    if(g_keywords != data){
+      g_keywords = data;
+      $(E).trigger('newKeywords');
+    }
   });
 
 
@@ -190,39 +187,10 @@ $(function () {
     $("#dialog-form").dialog("open");
   });
 
-  //g_keywords = $("#searchTerms"), allFields = $([]).add(g_keywords);
-  tips = $(".validateTips");
-
-  function updateTips(t) {
-    tips.text(t).addClass("ui-state-highlight");
-    setTimeout(function () {
-      tips.removeClass("ui-state-highlight", 1500);
-    }, 500);
-  }
-
-  function checkLength(o, n, min, max) {
-    if(o.val().length > max || o.val().length < min) {
-      o.addClass("ui-state-error");
-      updateTips("Length of " + n + " must be between " + min + " and " + max + ".");
-      return false;
-    } else {
-      return true;
-    }
-  }
-
-  function checkRegexp(o, regexp, n) {
-    if(!(regexp.test(o.val()))) {
-      o.addClass("ui-state-error");
-      updateTips(n);
-      return false;
-    } else {
-      return true;
-    }
-  }
-
   loadPage();
 
 });
+
 
 function tweetOnMap() {
   try {
@@ -256,20 +224,15 @@ function tweetOnMap() {
 function loadPage() {
   // Tell the server to close on Window Unload...
   $(window).unload(function () {
-    twitterStream.close();
+    g_twitterStreamSource.close();
   });
 
-
+  //pull in new google earth tweet every 30 seconds (without authenticating we can only do about 1 request every 24 seconds)
   setInterval(function () {
-    $("#news marquee").load("./news");
-    //$("#news").marquee();
-  }, 120000);
+    tweetOnMap();
+  }, 30000);
 
 
-  //pull in our initial google earth tweet after 4 seconds
-  //  setTimeout(function() {
-  //      setNewTweet(g_keywords);
-  //    }, 4000);
   setTimeout(function () {
     $("#storeNews").load("./googleTopWorldNews", function () {});
     $("#googleNews").fadeOut();
@@ -278,13 +241,6 @@ function loadPage() {
     $("#s_POPULAR").clone().appendTo($("#googleNews"));
     $("#googleNews").fadeIn();
   }, 4000);
-
-
-  //pull in new google earth tweet every 30 seconds (without authenticating we can only do about 1 request every 24 seconds)
-  setInterval(function () {
-    tweetOnMap();
-  }, 30000);
-
 
   //refresh google news every 1 hour
   setInterval(function () {

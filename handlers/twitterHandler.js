@@ -19,6 +19,8 @@ var TwitterHandler = function(dbModel) {
     var twitterStream = null;
 
     var sentRecently = false;
+    var dbProcessing = false;
+    var numDroppedSinceLastStore = 0;
 
     var events = require('events');
     var localEmitter = new events.EventEmitter();
@@ -26,7 +28,7 @@ var TwitterHandler = function(dbModel) {
     var currentKeywordsString = '';
 
     var tweetToWordsArray = function(inString){
-        var urlRegEx = /(\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/ig;                             
+        var urlRegEx = /(\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/ig;
 
         var text = inString
             .replace(/RT\s@(\S+)\s/ig, '')     // Remove "RT @xxxx" (retweet) tags
@@ -40,6 +42,8 @@ var TwitterHandler = function(dbModel) {
 
 
     var startStreamToClient = function(req, res) {
+        console.log("INFO: Stream to Client Started.");
+
         // Setup an Event-Stream to Client
         res.writeHead(200, {
             'Content-Type': 'text/event-stream',
@@ -107,11 +111,11 @@ var TwitterHandler = function(dbModel) {
 
                 // Shut down Twitter Stream if it exists.
                 if(twitterStream) twitterStream.destroy();
-            
+
             } else if((keywordsString === currentKeywordsString) && twitterStream) {
                 console.info("INFO: Keywords Unchanged. No need to restart stream from Twitter.");
                 return;
-            
+
             } else {
                 // Store the New Keywords
                 currentKeywordsString = keywordsString;
@@ -132,8 +136,7 @@ var TwitterHandler = function(dbModel) {
                     });
 
                     stream.on('data', function(t) {
-                        if(t.text) {
-
+                        if(t.text && (dbProcessing === false)) {
                             // If this tweet has location info, store it for the Maps feature.
                             if(t.coordinates || t.user.location) {
                                 latestTweetWithLoc = t;
@@ -141,10 +144,16 @@ var TwitterHandler = function(dbModel) {
 
                             var tweetWordsArray = tweetToWordsArray(t.text);
 
+                            // For sanity, only allow one DB call at a time
+                            // (i.e. drop tweets that come in while we're still storing
+                            //  this one...)
+                            dbProcessing = true;
+                            numDroppedSinceLastStore = 0;
+
                             // Find the keywords this was for.
                             keywordsModel.find({isActive: true}, function(err, activeKeywords) {
                                 if(err) console.error("ERROR: Storing Tweet returned Error!", err);
-                                
+
                                 for(var i in activeKeywords) {
                                     // If the keyword is in this tweet, store the tweet in this keyword's bank.
                                     for(var j in tweetWordsArray) {
@@ -154,11 +163,17 @@ var TwitterHandler = function(dbModel) {
                                         }
                                     }
                                 }
+
+                                // DB store operation completed, allow another tweet to come in.
+                                dbProcessing = false;
                             });
 
 
                         } else {
-                            console.log(t);
+                            numDroppedSinceLastStore++;
+                            if(dbProcessing) console.log("INFO: Tweet Dropped -- " + numDroppedSinceLastStore +
+                                " dropped since last tweet stored.");
+                            else console.log(t);
                         }
                     });
 
@@ -175,7 +190,7 @@ var TwitterHandler = function(dbModel) {
 
     var getGeoTweet = function(req, res) {
         var t = latestTweetWithLoc;
-        
+
         // Until a tweet with location comes in, we can't continue.
         if(!t) {
             console.log("INFO: GeoTweet Unavailable.");
