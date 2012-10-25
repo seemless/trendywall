@@ -23,6 +23,8 @@ var WordSchema = new mongoose.Schema({
     count: { type: 'number', default: 1 }
 });
 
+WordSchema.index({count: -1, _id: 1});
+
 var KeywordSchema = new mongoose.Schema({
     keyword: 'string',
     isActive: 'boolean',
@@ -104,9 +106,9 @@ KeywordSchema.statics.getHighestCountWords = function (cb, numWords) {
     this.aggregate(
         { $match: {isActive: true} },
         { $unwind: "$wordbank" },
-        { $project: {word: '$wordbank._id', count: '$wordbank.count'} },
-        { $sort: {count: -1} },
+        { $project: {isActive: '$isActive', word: '$wordbank._id', count: '$wordbank.count'} },
         { $limit: numWords },
+        { $sort: {count: -1} },
         function (err, res) {
             if(err) console.error(err);
 
@@ -237,18 +239,20 @@ app.get("/activateKeywords", function (req, res){
     var keywords = null;
     var s = req.param('keywords');
     if(s) keywords = s.split(',');
-    else return;
+    else res.end();
 
     KeywordsModel.activateKeywords(keywords, twitter.startStreamFromTwitter);
+    res.end();
 });
 
 app.get("/deactivateKeywords", function(req, res){
     var keywords = null;
     var s = req.param('keywords');
     if(s) keywords = s.split(',');
-    else return;
+    else res.end();
 
     KeywordsModel.deactivateKeywords(keywords, twitter.startStreamFromTwitter);
+    res.end();
 });
 
 app.get("/test", function (req, res) {

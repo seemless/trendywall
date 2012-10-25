@@ -214,7 +214,11 @@ var TwitterHandler = function(dbModel) {
             } else if(t.user.location) {
                 // If we only have an address (or City/State), Geocode w/ Google for a lat/Long
                 request('https://maps.googleapis.com/maps/api/geocode/json?address=' + t.user.location + '&sensor=false', function(error, response, body) {
-                    if(error) console.error(error);
+                    if(error) {
+                        console.error(error);
+                        res.end();
+                        return;
+                    }
                     resultsJSON = JSON.parse(body);
                     if(resultsJSON.status == 'OK') {
                         // Add a little variance so the placemarks don't stack.
@@ -237,7 +241,7 @@ var TwitterHandler = function(dbModel) {
                 res.end();
             }
         } catch(err) {
-            console.error(err);
+            console.error("ERROR: Geocode Error -> ", err);
         }
     };
 
