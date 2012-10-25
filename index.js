@@ -29,28 +29,32 @@ var KeywordSchema = new mongoose.Schema({
     wordbank: [WordSchema]
 });
 
+//WordSchema.index({_id: 1, count: 1});
 
 // DB Model Methods
 // Pass in array of words/phrases to store.
-KeywordSchema.methods.addText = function (textToStore, cb) {
-    // Store Words in DB
-    for(var i in textToStore) {
-        var doc = this.wordbank.id(textToStore[i]);
-        if(doc) {
-            doc.count++;
-            this.save();
-        } else {
-            this.wordbank.push({
-                _id: textToStore[i]
-            });
-            this.save();
+KeywordSchema.statics.addText = function (keyword, textToStore, cb) {
+    this.findOne({keyword: keyword}, function(err, obj){
+        if(err) console.error("ERROR: DB Error -> ", err);
+        // Store Words in DB
+        for(var i in textToStore) {
+            var doc = obj.wordbank.id(textToStore[i]);
+            if(doc) {
+                doc.count++;
+                obj.save();
+            } else {
+                obj.wordbank.push({
+                    _id: textToStore[i]
+                });
+                obj.save();
+            }
         }
-    }
 
-    // If we got passed a callback, call it.
-    if(cb) {
-        cb();
-    }
+        // If we got passed a callback, call it.
+        if(cb) {
+            cb();
+        }
+    });
 };
 
 

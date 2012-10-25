@@ -26,6 +26,7 @@ var TwitterHandler = function(dbModel) {
     var localEmitter = new events.EventEmitter();
 
     var currentKeywordsString = '';
+    var currentKeywordsArray = [];
 
     var tweetToWordsArray = function(inString){
         var urlRegEx = /(\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/ig;
@@ -119,6 +120,7 @@ var TwitterHandler = function(dbModel) {
             } else {
                 // Store the New Keywords
                 currentKeywordsString = keywordsString;
+                currentKeywordsArray = keywordsString.split(',');
 
                 // Close the old connection.
                 if(twitterStream) twitterStream.destroy();
@@ -151,22 +153,18 @@ var TwitterHandler = function(dbModel) {
                             numDroppedSinceLastStore = 0;
 
                             // Find the keywords this was for.
-                            keywordsModel.find({isActive: true}, function(err, activeKeywords) {
-                                if(err) console.error("ERROR: Storing Tweet returned Error!", err);
-
-                                for(var i in activeKeywords) {
-                                    // If the keyword is in this tweet, store the tweet in this keyword's bank.
-                                    for(var j in tweetWordsArray) {
-                                        if(tweetWordsArray[j] == activeKeywords[i].keyword) {
-                                            activeKeywords[i].addText(tweetWordsArray);
-                                            break;
-                                        }
+                            for(var i in currentKeywordsArray){
+                                // If the keyword is in this tweet, store the tweet in this keyword's bank.
+                                for(var j in tweetWordsArray) {
+                                    if(tweetWordsArray[j] == currentKeywordsArray[i]) {
+                                        keywordsModel.addText(currentKeywordsArray[i], tweetWordsArray);
+                                        break;
                                     }
                                 }
+                            }
 
-                                // DB store operation completed, allow another tweet to come in.
-                                dbProcessing = false;
-                            });
+                            // DB store operation completed, allow another tweet to come in.
+                            dbProcessing = false;
 
 
                         } else {
