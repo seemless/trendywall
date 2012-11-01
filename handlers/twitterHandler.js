@@ -1,7 +1,4 @@
-var glossary = require("glossary")({
-    collapse: true,
-    blacklist: ["rt", "http", "www"]
-});
+
 
 var TwitterHandler = function(dbModel) {
     var keywordsModel = dbModel;
@@ -26,38 +23,47 @@ var TwitterHandler = function(dbModel) {
     var localEmitter = new events.EventEmitter();
 
     var currentKeywordsString = '';
-    var currentKeywordsArray = [];
+    var wordStoreArray = [];
+
+    var saveToDB = function(){
+        console.log("INFO: Storing to DB.");
+        for(var i = 0; i < wordStoreArray.length; i++){
+            if(wordStoreArray[i].text){
+                var urlRegEx = /(\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/ig;
+                var text = wordStoreArray[i].text
+                    .replace(/RT\s@(\S+)\s/ig, ' ')    // Remove "RT @xxxx" (retweet) tags
+                    .replace(/@(\S+)\s/ig, ' ')        // Remove usernames ("@xxx")
+                    .replace(/&(\w+);/ig, ' ')         // Remove HTML entities (like &amp;, $nbsp;, etc...)
+                    .replace(/\s([0-9]+)\s/ig, ' ')    // Remove single numbers (not meaningful to us...)
+                    .replace(urlRegEx, ' ');            // Remove Hyperlinks
+                    //.replace(/\W/ig, ' ');             // Remove non-alphanumeric characters
+
+                keywordsModel.addText(wordStoreArray[i].word, text.toLowerCase());
+                wordStoreArray[i].textArray = '';
+            }
+        }
+    };
 
     var tweetToWordsArray = function(inString){
-        var urlRegEx = /(\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/ig;
-
-        var text = inString
-            .replace(/RT\s@(\S+)\s/ig, '')     // Remove "RT @xxxx" (retweet) tags
-            .replace(/&(\w+);/ig, '')          // Remove HTML entities
-            .replace(/\s([0-9]+)\s/ig, '')     // Remove single numbers (not meaningful to us...)
-            .replace(urlRegEx, '')             // Remove Hyperlinks
-            .replace(/\W/ig, ' ');             // Remove non-alphanumeric characters
-
-        return glossary.extract(text);
+        return inString.split(' ');
     };
 
 
     var startStreamToClient = function(req, res) {
-        console.log("INFO: Stream to Client Started.");
-
-        // Setup an Event-Stream to Client
-        res.writeHead(200, {
-            'Content-Type': 'text/event-stream',
-            'Cache-Control': 'no-cache',
-            'Connection': 'keep-alive'
-        });
-        res.write('\n');
-
         if(!twitterStream) {
             // Nothing coming from Twitter, so
             // close the stream to the client.
+            console.log("INFO: No Twitter Stream. Closing Connection to Client.");
             res.end();
         } else {
+            // Setup an Event-Stream to Client
+            res.writeHead(200, {
+                'Content-Type': 'text/event-stream',
+                'Cache-Control': 'no-cache',
+                'Connection': 'keep-alive'
+            });
+            res.write('\n');
+
             // Used to rate-limit sending of events to the client.
             var sentRecently = false;
 
@@ -86,25 +92,18 @@ var TwitterHandler = function(dbModel) {
             });
 
             // Queue up the action for when we lose Client Connection
-            req.on("close", function() {
+            req.on('close', function() {
                 console.log("INFO: Received Browser Close Event. Shutting Down Sever End of Stream To Client.");
                 res.end();
             });
+
+            console.log("INFO: Stream to Client Started.");
         }
     };
 
 
     var startStreamFromTwitter = function() {
-        // Build the Keywords String from the active keywords in the DB
-        keywordsModel
-            .find({isActive: true})
-            .sort({keyword: 1})
-            .exec(function(err, results) {
-                var newKeywords = [];
-                for(var i in results) newKeywords.push(results[i].keyword);
-                localEmitter.emit('keywordsStringUpdated', newKeywords.join());
-            });
-
+        // After keywords updated (this event emitted below)
         localEmitter.once('keywordsStringUpdated', function(keywordsString){
             if(keywordsString === '') {
                 // No keywords for Twitter.
@@ -112,15 +111,18 @@ var TwitterHandler = function(dbModel) {
 
                 // Shut down Twitter Stream if it exists.
                 if(twitterStream) twitterStream.destroy();
-
             } else if((keywordsString === currentKeywordsString) && twitterStream) {
                 console.info("INFO: Keywords Unchanged. No need to restart stream from Twitter.");
                 return;
-
             } else {
+                // Save current wordbank
+                saveToDB();
+
                 // Store the New Keywords
                 currentKeywordsString = keywordsString;
-                currentKeywordsArray = keywordsString.split(',');
+                wordStoreArray = [];
+                var tempArray = keywordsString.split(',');
+                for(var i in tempArray) wordStoreArray.push({word: tempArray[i], textArray: ''});
 
                 // Close the old connection.
                 if(twitterStream) twitterStream.destroy();
@@ -138,7 +140,7 @@ var TwitterHandler = function(dbModel) {
                     });
 
                     stream.on('data', function(t) {
-                        if(t.text && (dbProcessing === false)) {
+                        if(t.text) {
                             // If this tweet has location info, store it for the Maps feature.
                             if(t.coordinates || t.user.location) {
                                 latestTweetWithLoc = t;
@@ -146,32 +148,19 @@ var TwitterHandler = function(dbModel) {
 
                             var tweetWordsArray = tweetToWordsArray(t.text);
 
-                            // For sanity, only allow one DB call at a time
-                            // (i.e. drop tweets that come in while we're still storing
-                            //  this one...)
-                            dbProcessing = true;
-                            numDroppedSinceLastStore = 0;
-
                             // Find the keywords this was for.
-                            for(var i in currentKeywordsArray){
+                            for(var i in wordStoreArray){
                                 // If the keyword is in this tweet, store the tweet in this keyword's bank.
                                 for(var j in tweetWordsArray) {
-                                    if(tweetWordsArray[j] == currentKeywordsArray[i]) {
-                                        keywordsModel.addText(currentKeywordsArray[i], tweetWordsArray);
+                                    if(tweetWordsArray[j] == wordStoreArray[i].word) {
+                                        wordStoreArray[i].text += ' ' + t.text;
                                         break;
                                     }
                                 }
                             }
 
-                            // DB store operation completed, allow another tweet to come in.
-                            dbProcessing = false;
-
-
                         } else {
-                            numDroppedSinceLastStore++;
-                            if(dbProcessing) console.log("INFO: Tweet Dropped -- " + numDroppedSinceLastStore +
-                                " dropped since last tweet stored.");
-                            else console.log(t);
+                            console.log(t);
                         }
                     });
 
@@ -184,6 +173,19 @@ var TwitterHandler = function(dbModel) {
                 localEmitter.emit('streamFromTwitterActive');
             }
         });
+
+        // Every so often, store the wordbanks to the DB
+        setTimeout(saveToDB, 30000);
+
+        // Build the Keywords String from the active keywords in the DB
+        keywordsModel
+            .find({isActive: true})
+            .sort({keyword: 1})
+            .exec(function(err, results) {
+                var newKeywords = [];
+                for(var i in results) newKeywords.push(results[i].keyword);
+                localEmitter.emit('keywordsStringUpdated', newKeywords.join());
+            });
     };
 
     var getGeoTweet = function(req, res) {

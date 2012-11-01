@@ -1,11 +1,18 @@
 var DEBUG = false;
 
+//require("nodetime").profile();
+
 var express = require("express");
 var app = express();
 
 var request = require("request"); //for doing http gets.. in this case to get google top 10
 
 var NUM_WORDS_IN_CLOUD = 50;
+
+var glossary = require("glossary")({
+    collapse: true,
+    blacklist: ["rt", "http", "www", "of", "to", "the", "a", "I", "lol"]
+});
 
 
 // Database Setup
@@ -38,19 +45,25 @@ var KeywordSchema = new mongoose.Schema({
 KeywordSchema.statics.addText = function (keyword, textToStore, cb) {
     this.findOne({keyword: keyword}, function(err, obj){
         if(err) console.error("ERROR: DB Error -> ", err);
+        
         // Store Words in DB
-        for(var i in textToStore) {
-            var doc = obj.wordbank.id(textToStore[i]);
-            if(doc) {
-                doc.count++;
-                obj.save();
-            } else {
-                obj.wordbank.push({
-                    _id: textToStore[i]
-                });
-                obj.save();
+        var theWords = glossary.extract(textToStore);
+        console.log(theWords);
+        for(var i = 0; i < theWords.length; i++) {
+            if(theWords[i] !== ''){
+                var doc = obj.wordbank.id(theWords[i]);
+                if(doc) {
+                    doc.count++;
+                } else {
+                    obj.wordbank.push({
+                        _id: theWords[i]
+                    });
+                }
             }
         }
+
+        obj.save();
+        console.log("SAVED");
 
         // If we got passed a callback, call it.
         if(cb) {

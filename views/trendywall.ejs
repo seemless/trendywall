@@ -11,8 +11,10 @@
   <script type="text/javascript" src="https://www.google.com/jsapi"></script>
   <script type="text/javascript" src="/static/js/googleEarth.js"></script>
 
-  <script type="text/javascript" src="/static/js/jqcloud-1.0.2.min.js"></script>
-  <link type="text/css" href="/static/css/jqcloud.css" rel="stylesheet"/>
+<!--  <script type="text/javascript" src="/static/js/jqcloud-1.0.2.min.js"></script>
+  <link type="text/css" href="/static/css/jqcloud.css" rel="stylesheet"/> -->
+
+  <script type="text/javascript" src="/static/js/jquery.awesomeCloud-0.2.js"></script>
 
   <script type="text/javascript" src="/static/js/layout.js"></script>
 
@@ -22,11 +24,21 @@ var E = {}; // Empty element to handle our custom events.
 var g_keywords = [];
 var g_twitterStreamSource = null;
 
+var wordCloudSettings = {
+  shape: "circle",
+  font: "Helvetica, Arial, Sans",
+  options: {
+    color: "random-light",
+    rotationRatio: 0,
+    sort: "highest"
+  }
+};
+
 function getKeywordsString(inArray) {
   if(!inArray) inArray = g_keywords;
 
   var keywordsString = "";
-  for(var i in g_keywords) keywordsString += g_keywords[i] + ',';
+  for(var i = 0; i < g_keywords.length; i++) keywordsString += g_keywords[i] + ',';
   keywordsString = keywordsString.slice(0, keywordsString.length - 1);    // Remove Trailing Comma
 
   return keywordsString;
@@ -56,11 +68,16 @@ function startTwitterStream() {
   }, false);
 }
 $(E).on('newKeywords', startTwitterStream);
+$(window).load(function(){
+  // Every 20 seconds, try to restart twitter stream. 
+  setTimeout(function(){startTwitterStream()}, 20000);
+});
+
 
 // Display Keywords on notice that there's new ones.
 function displayKeywords(){
   var html = '';
-  for(var i in g_keywords) {
+  for(var i = 0; i < g_keywords.length; i++){
     html += "<span class='search-term'>" + g_keywords[i] + "<" + "/span>";
   }
   $("#keywordsSpans").html(html);
@@ -134,6 +151,7 @@ $(function () {
     },
     close: function () {
       $("#map3d").show();
+      $("#wordcloud").show();
 
       // Notifty Listeners
       $(E).trigger('newKeywords');
@@ -148,13 +166,13 @@ $(function () {
         var toDeactivateString = '';
 
         console.log("KE: ", g_keywords);
-        for(var i in g_keywords){
+        for(var i = 0; i < g_keywords.length; i++){
           if($.inArray(g_keywords[i], wordsFromServer) == -1){
             toActivate.push(g_keywords[i]);
           }
         }
 
-        for(var i in wordsFromServer){
+        for(var i = 0; i < wordsFromServer.length; i++){
           if($.inArray(wordsFromServer[i], g_keywords) == -1){
             toDeactivate.push(wordsFromServer[i]);
           }
@@ -184,6 +202,7 @@ $(function () {
   $("#changeSearchTermsButton").button().click(function (event) {
     event.preventDefault();
     $("#map3d").hide();
+    $("#wordcloud").hide();
     $("#dialog-form").dialog("open");
   });
 
@@ -261,10 +280,14 @@ setInterval(function(){
     $("#wordcloud").html('');
     $.getJSON("/getWordCloudWords/", function(data, text, obj){
       if(data){
-        $("#wordcloud").jQCloud(data);
+        var el = $("#wordcloud");
+        for(var i = 0; i < data.length; i++){
+          el.append("<span data-weight='" + data[i].weight + "' style='display: none;'>" + data[i].text + "</span>");
+        }
+        el.awesomeCloud(wordCloudSettings);
       }
     });
-  }, 90 * 1000);
+}, 80 * 1000);
 
   </script>
 </head>
