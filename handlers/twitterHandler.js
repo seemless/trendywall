@@ -153,7 +153,7 @@ var TwitterHandler = function(dbModel) {
                                 // If the keyword is in this tweet, store the tweet in this keyword's bank.
                                 for(var j in tweetWordsArray) {
                                     if(tweetWordsArray[j] == wordStoreArray[i].word) {
-                                        wordStoreArray[i].text += ' ' + t.text;
+                                        wordStoreArray[i].text += ' ' + t.text.toLowerCase();
                                         break;
                                     }
                                 }

@@ -277,17 +277,17 @@ function loadPage() {
 
 // Update WordCloud every 90 sec
 setInterval(function(){
-    $("#wordcloud").html('');
     $.getJSON("/getWordCloudWords/", function(data, text, obj){
       if(data){
         var el = $("#wordcloud");
+        el.html('');
         for(var i = 0; i < data.length; i++){
-          el.append("<span data-weight='" + data[i].weight + "' style='display: none;'>" + data[i].text + "</span>");
+          el.append("<span data-weight='" + data[i].count + "' style='display: none;'>" + data[i].word + "</span>");
         }
         el.awesomeCloud(wordCloudSettings);
       }
     });
-}, 80 * 1000);
+}, 90 * 1000);
 
   </script>
 </head>
