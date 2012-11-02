@@ -34,7 +34,7 @@ var dbHandler = function(dbName) {
                     "rt", "http", "www",
                     "of", "to", "the",
                     "a", "I", "lol",
-                    ":)", ":(", "XD"
+                    ":)", ":(", "xd"
                 ]
             });
 
