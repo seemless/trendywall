@@ -22,7 +22,13 @@ h1 {
 
 .search-term {
   float: left;
-  padding: 10px;
+  padding: 5px;
+  text-transform: uppercase;
+  font-size: x-large;
+  font-weight: bold;
+  background: #888888;
+  margin: 5px;
+  border-radius: 10px;
 }
 
 /* --- Slideshow --- */
@@ -65,4 +71,29 @@ div.tweet {
   margin: 0;
   color: #888888;
   text-transform: lowercase;
+}
+
+/*--- News ---*/
+
+div.news-story {
+  border-bottom: 1px solid gray;
+  clear: both;
+  min-height: 80px;
+  padding: 5px;
+}
+
+div.news-story a {
+  font-size: large;
+  font-weight: bold;
+  color: #888888;
+  text-transform: uppercase;
+  text-align: center;
+  margin: 0;
+}
+
+div.news-story p {
+  color: white;
+  margin: 0;
+  padding: 0;
+  text-align: justify;
 }

@@ -165,7 +165,7 @@ var TwitterHandler = function(dbModel) {
                     });
 
                     stream.on('limit', function(limit) {
-                        console.log("INFO: Twitter Limit Message --> ", limit);
+                        console.log("INFO: Twitter Limit Message (Too many tweets to send to us)! # Missed: ", limit);
                     });
                 });
 

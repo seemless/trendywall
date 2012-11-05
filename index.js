@@ -1,29 +1,42 @@
+// TRENDYWALL
+// 
+// To run TrendyWall, run this file in NodeJS.
+
+// === Debugging ===
 // Generate DEBUG output.
 var DEBUG = false;
-
 // Connect to https://nodetime.com for profiling
-//require("nodetime").profile();
+if(DEBUG) require("nodetime").profile();
 
+// === Server Setup ===
 // Use the Express Framework to serve our application.
 var MOD_express = require("express");
 var g_app = MOD_express();
 
+// === Configuration ===
+// Declare Constants
 var NUM_WORDS_IN_CLOUD = 50;
 
-// Database Setup
-var g_db = require("./handlers/dbHandler.js")("db");
-
-var g_twitter = require("./handlers/twitterHandler.js")(g_db.keywordsModel);
-
-// Setup
+// Views
 g_app.configure(function () {
     g_app.set('views', __dirname + '/views');
     g_app.set('view engine', 'jade');
 });
 
-
-// Serve static files
+// Statics (simply serve flat files from this directory)
 g_app.use("/static", MOD_express.static(__dirname + '/static'));
+
+
+
+
+
+// Database Setup
+var g_db = require("./handlers/dbHandler.js")("db");
+
+
+
+var g_twitter = require("./handlers/twitterHandler.js")(g_db.keywordsModel);
+
 
 // TODO: Do better than this...
 g_app.get("/googleTopWorldNews", function (req, res) {

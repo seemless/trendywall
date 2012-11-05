@@ -45,7 +45,9 @@ function getKeywordsString(inArray) {
 }
 
 function startTwitterStream() {
+  // Close the connection if it exists.
   if(g_twitterStreamSource) g_twitterStreamSource.close();
+  
   var url = '/twitterStream?keywords=' + escape(getKeywordsString());
   var source = g_twitterStreamSource = new EventSource(url);
   source.addEventListener('message', function (e) {
@@ -119,13 +121,33 @@ $(E).on('newKeywords', startFlickrStream);
 
 
 
+var getGoogleNews = function(){
+  var googleNewsSearch = new google.search.NewsSearch();
+  googleNewsSearch.setSearchCompleteCallback(this, function(){
+      if(googleNewsSearch.results && googleNewsSearch.results.length > 0){
+        $("#googleNews").html('');
+        for(var i = 0; i < googleNewsSearch.results.length; i++){
+            $("#googleNews").append("<div class='news-story'><a href='"+googleNewsSearch.results[i].url+"'>"+googleNewsSearch.results[i].title+"</a><br /><p>"+googleNewsSearch.results[i].content+"</p></div>");
+        }
+      }
 
+      console.log(googleNewsSearch);
+    }, null);
+
+    googleNewsSearch.setResultSetSize(8);
+    googleNewsSearch.execute(g_keywords);
+
+    google.search.Search.getBranding('branding');
+}
+$(E).on('newKeywords', getGoogleNews);
 
 
 
 
 //Everything in this functions runs immediately on load
 $(function () {
+  google.load('search', '1', {callback: getGoogleNews});
+  
   $("#dialog-form").dialog({
     autoOpen: false,
     show: "fade",
@@ -247,14 +269,20 @@ function loadPage() {
   }, 30000);
 
 
-  setTimeout(function () {
-    $("#storeNews").load("./googleTopWorldNews", function () {});
-    $("#googleNews").fadeOut();
-    $("#googleNews").html('');
-    $("#s_INTERESTING").clone().appendTo($("#googleNews"));
-    $("#s_POPULAR").clone().appendTo($("#googleNews"));
-    $("#googleNews").fadeIn();
-  }, 4000);
+
+
+  setTimeout(getGoogleNews, 30 * 6000);
+
+    //function () {
+    
+    
+    // $("#storeNews").load("./googleTopWorldNews", function () {});
+    // $("#googleNews").fadeOut();
+    // $("#googleNews").html('');
+    // $("#s_INTERESTING").clone().appendTo($("#googleNews"));
+    // $("#s_POPULAR").clone().appendTo($("#googleNews"));
+    // $("#googleNews").fadeIn();
+  //}, 4000);
 
   //refresh google news every 1 hour
   setInterval(function () {
