@@ -68,11 +68,6 @@ function startTwitterStream() {
   }, false);
 }
 $(E).on('newKeywords', startTwitterStream);
-$(window).load(function(){
-  // Every 20 seconds, try to restart twitter stream. 
-  setTimeout(function(){startTwitterStream()}, 20000);
-});
-
 
 // Display Keywords on notice that there's new ones.
 function displayKeywords(){

@@ -50,20 +50,20 @@ var TwitterHandler = function(dbModel) {
 
 
     var startStreamToClient = function(req, res) {
+        // Setup an Event-Stream to Client
+        res.writeHead(200, {
+            'Content-Type': 'text/event-stream',
+            'Cache-Control': 'no-cache',
+            'Connection': 'keep-alive'
+        });
+        res.write('\n');
+
         if(!twitterStream) {
             // Nothing coming from Twitter, so
             // close the stream to the client.
             console.log("INFO: No Twitter Stream. Closing Connection to Client.");
             res.end();
         } else {
-            // Setup an Event-Stream to Client
-            res.writeHead(200, {
-                'Content-Type': 'text/event-stream',
-                'Cache-Control': 'no-cache',
-                'Connection': 'keep-alive'
-            });
-            res.write('\n');
-
             // Used to rate-limit sending of events to the client.
             var sentRecently = false;
 
@@ -160,12 +160,12 @@ var TwitterHandler = function(dbModel) {
                             }
 
                         } else {
-                            console.log(t);
+                            console.log("INFO: Non-Tweet from Twitter: ", t);
                         }
                     });
 
                     stream.on('limit', function(limit) {
-                        console.log(limit);
+                        console.log("INFO: Twitter Limit Message --> ", limit);
                     });
                 });
 
