@@ -122,12 +122,14 @@ $(E).on('newKeywords', startFlickrStream);
 
 
 var getGoogleNews = function(){
+  if(!google.search) return;
   var googleNewsSearch = new google.search.NewsSearch();
   googleNewsSearch.setSearchCompleteCallback(this, function(){
       if(googleNewsSearch.results && googleNewsSearch.results.length > 0){
         $("#googleNews").html('');
         for(var i = 0; i < googleNewsSearch.results.length; i++){
             $("#googleNews").append("<div class='news-story'><a href='"+googleNewsSearch.results[i].url+"'>"+googleNewsSearch.results[i].title+"</a><br /><p>"+googleNewsSearch.results[i].content+"</p></div>");
+            //google.search.Search.getBranding('googleBranding');
         }
       }
 
@@ -136,8 +138,6 @@ var getGoogleNews = function(){
 
     googleNewsSearch.setResultSetSize(8);
     googleNewsSearch.execute(g_keywords);
-
-    google.search.Search.getBranding('branding');
 }
 $(E).on('newKeywords', getGoogleNews);
 
