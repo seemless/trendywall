@@ -20,12 +20,14 @@ var FlickrHandler = function () {
 
         flickr.executeAPIRequest("flickr.photos.search", {
           tags: queryWords,
-          tag_mode: tagMode
+          tag_mode: tagMode,
+          safe_search: 1
         }, /* Use Credentials: */ true, function (err, reply, cb) {
           var outHTML = '';
 
           if(err) console.error("ERROR: Flickr API Error -> " + err);
           else {
+            
             var imgTagBeg = "<img src='";
             var imgTagEndOne = "' class='active' style='display: none;'/>";
             var imgTagEngOther = "' />";

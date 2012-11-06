@@ -28,20 +28,25 @@ var dbHandler = function(dbName) {
             if(err) console.error("ERROR: DB Error -> ", err);
 
             var glossary = require("glossary")({
-                collapse: true,
+                collapse: false,
                 verbose: true,
                 blacklist: [
                     "rt", "http", "www",
                     "of", "to", "the",
                     "a", "I", "lol",
-                    ":)", ":(", "xd"
+                    ":)", ":(", "xd",
+                    "smh", "fuck", "ass", 
+                    "shit", "crap"
                 ]
             });
 
             // Some filtering
             var filteredText = textToStore
                 .replace(/&(\w+);/ig, ' ')  // Remove HTML entities (like &amp;, $nbsp;, etc...)
+                .replace(/[\/\(\):_%]/, ' ') // Remove Slashes & Parenthesis & Colons & Underscores & Percents
                 .replace(/"/ig, ' ')
+                .replace(new RegExp(inWord, 'ig'), ' ') // Remove the keyword
+                .replace(/\s\w\s/, ' ') // Remove single characters
                 .replace(/\s(\W+)\s/ig, ' ');
 
             // Calculate word frequency

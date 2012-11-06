@@ -1,5 +1,3 @@
-
-
 var TwitterHandler = function(dbModel) {
     var keywordsModel = dbModel;
 

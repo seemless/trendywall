@@ -146,6 +146,11 @@ $(E).on('newKeywords', getGoogleNews);
 
 //Everything in this functions runs immediately on load
 $(function () {
+  // Reload page every 10 minutes.
+  setTimeout(function(){
+    location.reload();
+  }, 600000);
+
   google.load('search', '1', {callback: getGoogleNews});
   
   $("#dialog-form").dialog({
