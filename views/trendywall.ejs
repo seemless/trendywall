@@ -25,6 +25,7 @@ var g_keywords = [];
 var g_twitterStreamSource = null;
 
 var wordCloudSettings = {
+  size: { normalize: true },
   shape: "circle",
   font: "Helvetica, Arial, Sans",
   options: {
@@ -141,11 +142,25 @@ var getGoogleNews = function(){
 }
 $(E).on('newKeywords', getGoogleNews);
 
-
+var doWordcloud = function(){
+    $.getJSON("/getWordCloudWords/", function(data, text, obj){
+      if(data){
+        var el = $("#wordcloud");
+        el.html('');
+        for(var i = 0; i < data.length; i++){
+          el.append("<span data-weight='" + data[i].count + "' style='display: none;'>" + data[i].word + "</span>");
+        }
+        el.awesomeCloud(wordCloudSettings);
+      }
+    });
+}
 
 
 //Everything in this functions runs immediately on load
 $(function () {
+  // Update WordCloud every 90 sec
+  setInterval(doWordcloud, 90 * 1000);
+
   // Reload page every 10 minutes.
   setTimeout(function(){
     location.reload();
@@ -273,8 +288,7 @@ function loadPage() {
     tweetOnMap();
   }, 30000);
 
-
-
+  doWordcloud();
 
   setTimeout(getGoogleNews, 30 * 6000);
 
@@ -303,19 +317,7 @@ function loadPage() {
   }, 600000);
 }
 
-// Update WordCloud every 90 sec
-setInterval(function(){
-    $.getJSON("/getWordCloudWords/", function(data, text, obj){
-      if(data){
-        var el = $("#wordcloud");
-        el.html('');
-        for(var i = 0; i < data.length; i++){
-          el.append("<span data-weight='" + data[i].count + "' style='display: none;'>" + data[i].word + "</span>");
-        }
-        el.awesomeCloud(wordCloudSettings);
-      }
-    });
-}, 90 * 1000);
+
 
   </script>
 </head>
