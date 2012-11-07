@@ -360,8 +360,9 @@ Extra Thanks:
 							foundMax = true;
 						}
 					}
+					this.destroyCanvas( ctxID );
 				}
-				//this.destroyCanvas( ctxID );
+				
 				//this.settings.size.factor -= jump;
 			}
 

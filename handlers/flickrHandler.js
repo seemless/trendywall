@@ -30,14 +30,14 @@ var FlickrHandler = function () {
             var imgTagBeg = "<img src='";
             var imgTagEndOne = "' class='active' style='display: none;'/>";
             var imgTagEngOther = "' />";
-            var i = Math.min(reply.photos.length, 100);
-
+            var i = Math.min(Object.keys(reply.photos).length, 100);
+            
             for(var k = 0; k < i; k++) {
               //http://farm{farm-id}.staticflickr.com/{server-id}/{id}_{secret}.jpg
               var p = reply.photos.photo[k];
-              console.log(p);
+              
               var src = "http://farm" + p.farm + ".staticflickr.com/" + p.server + "/" + p.id + "_" + p.secret + ".jpg";
-              if(k == 1) {
+              if(k == 0) {
                 outHTML += imgTagBeg + src + imgTagEndOne;
               } else {
                 outHTML += imgTagBeg + src + imgTagEngOther;

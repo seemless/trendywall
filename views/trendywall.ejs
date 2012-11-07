@@ -7,17 +7,10 @@
 
   <script src="http://code.jquery.com/jquery-1.8.2.js"></script>
   <script src="http://code.jquery.com/ui/1.9.0/jquery-ui.js"></script>
-
   <script type="text/javascript" src="https://www.google.com/jsapi"></script>
   <script type="text/javascript" src="/static/js/googleEarth.js"></script>
-
-<!--  <script type="text/javascript" src="/static/js/jqcloud-1.0.2.min.js"></script>
-  <link type="text/css" href="/static/css/jqcloud.css" rel="stylesheet"/> -->
-
   <script type="text/javascript" src="/static/js/jquery.awesomeCloud-0.2.MODIFIED.js"></script>
-
   <script type="text/javascript" src="/static/js/layout.js"></script>
-
   <script>
 var E = {}; // Empty element to handle our custom events.
 var g_keywords = [];
@@ -75,7 +68,7 @@ $(E).on('newKeywords', startTwitterStream);
 function displayKeywords(){
   var html = '';
   for(var i = 0; i < g_keywords.length; i++){
-    html += "<span class='search-term'>" + g_keywords[i] + "<" + "/span>";
+    html += "<span class='search-term' style='height: " + ($("#level1top").height() - 20) + "px;'>" + g_keywords[i] + "<" + "/span>";
   }
   $("#keywordsSpans").html(html);
   $("#searchTerms").val(getKeywordsString());
@@ -120,7 +113,6 @@ function startFlickrStream(){
 $(E).on('newKeywords', startFlickrStream);
 
 
-
 var getGoogleNews = function(){
   if(!google.search) return;
   var googleNewsSearch = new google.search.NewsSearch();
@@ -128,7 +120,7 @@ var getGoogleNews = function(){
       if(googleNewsSearch.results && googleNewsSearch.results.length > 0){
         $("#googleNews").html('');
         for(var i = 0; i < googleNewsSearch.results.length; i++){
-            $("#googleNews").append("<div class='news-story'><a href='"+googleNewsSearch.results[i].url+"'>"+googleNewsSearch.results[i].title+"</a><br /><p>"+googleNewsSearch.results[i].content+"</p></div>");
+            $("#googleNews").append("<div class='news-story'><a href='"+googleNewsSearch.results[i].url+"'>"+googleNewsSearch.results[i].title+"</a><br /><span>"+googleNewsSearch.results[i].content+"</span></div>");
             //google.search.Search.getBranding('googleBranding');
         }
       }
@@ -159,6 +151,8 @@ $(function () {
   // Update WordCloud every 90 sec
   setInterval(doWordcloud, 90 * 1000);
   doWordcloud();
+
+  $("#changeSearchTermsButton").height(($("#level1top").height() - 20));
 
   // Reload page every 10 minutes.
   setTimeout(function(){
@@ -334,9 +328,7 @@ function loadPage() {
     </div>
     <div id="level2middle" style="float: left;">
       <div id="level3top" style="">
-
         <div id="map3d" class="content-wrapper"></div>
-
       </div>
       <div id="level3bottom" style="">
         <div id="level4left" style="float: left;">
@@ -352,13 +344,12 @@ function loadPage() {
       </div>
     </div>
   </div>
-  <div id="level1bottom" style="" class="content-wrapper">
-    <div style="">
+  <div id="level1bottom">
+    <div class="content-wrapper">
       <span style="color:#dd3333; font-size:x-large; font-weight:bold; position: relative; top: 10px;">#Breaking News</span>
     </div>
     <div id="news" style="float:right;"><marquee behavior="scroll" direction="left" scrollamount="8"></marquee></div>
   </div>
-
   <!-- Hidden Divs -->
   <div id="storeNews" style="visibility:hidden; height:1px; width:1px;"></div>
   <div id="hidden" style="width: 25%; float: left; padding: 10px; visibility:hidden;">
@@ -374,7 +365,5 @@ function loadPage() {
       </fieldset>
     </form>
   </div>
-
-
 </body>
 </html>

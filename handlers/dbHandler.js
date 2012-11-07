@@ -40,6 +40,14 @@ var dbHandler = function(dbName) {
                 ]
             });
 
+            var blacklist = [
+                    "rt", "http", "www", "of", "to", "the",
+                    "a", "I", "lol", "xd", "this", "for", 
+                    "and", "in", "there", "be", "smh", "is", 
+                    "that", "we", "have", "came", "it's",
+                    "fuck", "ass", "shit", "crap"
+                ]
+
             // Some filtering
             var filteredText = textToStore
                 .replace(/&(\w+);/ig, ' ')  // Remove HTML entities (like &amp;, $nbsp;, etc...)
@@ -50,14 +58,7 @@ var dbHandler = function(dbName) {
                 .replace(/\s(\W+)\s/ig, ' ')
 
                 // Blacklist
-                .replace(/\sis\s/ig, ' ')
-                .replace(/\sto\s/ig, ' ')
-                .replace(/\srt\s/ig, ' ')
-                .replace(/\sof\s/ig, ' ')
-                .replace(/\slol\s/ig, ' ')
-                .replace(/\sif\s/ig, ' ')
-                .replace(/\si'm\s/ig, ' ')
-                .replace(/\sthe\s/ig, ' ');
+                .replace(new RegExp("\\s" + blacklist.join('\\s|\\s') + "\\s", 'ig'), ' ');
 
             // Calculate word frequency
             //var wordsArray = glossary.extract(filteredText);

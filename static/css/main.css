@@ -3,6 +3,7 @@ body {
   background: black;
   overflow: hidden;
   font-family: "Helvetica", "Arial", "Arial Narrow", sans-serif;
+  margin: 0;
 }
 
 label, input { display:block; }
@@ -29,6 +30,11 @@ h1 {
   background: #888888;
   margin: 5px;
   border-radius: 10px;
+}
+
+input.ui-button {
+  padding: 5px;
+  margin: 5px;
 }
 
 /* --- Slideshow --- */

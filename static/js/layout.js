@@ -8,7 +8,7 @@ function layout(){
 	var level1middle_width = windowWidth;
 	var level1middle_height = windowHeight * 0.95 - level1top_height;
 	var level1bottom_width = windowWidth;
-	var level1bottom_height = windowHeight - level1middle_height;
+	var level1bottom_height = windowHeight - level1top_height - level1middle_height - 4; // 4 px for borders
 	$('#level1top')
 		.css("width", level1top_width)
 		.css("height", level1top_height);
