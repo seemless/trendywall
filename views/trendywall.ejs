@@ -14,12 +14,11 @@
 <!--  <script type="text/javascript" src="/static/js/jqcloud-1.0.2.min.js"></script>
   <link type="text/css" href="/static/css/jqcloud.css" rel="stylesheet"/> -->
 
-  <script type="text/javascript" src="/static/js/jquery.awesomeCloud-0.2.js"></script>
+  <script type="text/javascript" src="/static/js/jquery.awesomeCloud-0.2.MODIFIED.js"></script>
 
   <script type="text/javascript" src="/static/js/layout.js"></script>
 
   <script>
-
 var E = {}; // Empty element to handle our custom events.
 var g_keywords = [];
 var g_twitterStreamSource = null;
@@ -151,15 +150,15 @@ var doWordcloud = function(){
           el.append("<span data-weight='" + data[i].count + "' style='display: none;'>" + data[i].word + "</span>");
         }
         el.awesomeCloud(wordCloudSettings);
-      }
-    });
+    }
+  });
 }
-
 
 //Everything in this functions runs immediately on load
 $(function () {
   // Update WordCloud every 90 sec
   setInterval(doWordcloud, 90 * 1000);
+  doWordcloud();
 
   // Reload page every 10 minutes.
   setTimeout(function(){

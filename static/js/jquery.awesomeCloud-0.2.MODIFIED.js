@@ -303,52 +303,62 @@ Extra Thanks:
 
 			// Set the font scaling factor if factor is 0.
 			if ( this.settings.size.factor === parseInt( 0, 10 ) ) {
+				var lastTimeFactor = null;
 				this.settings.size.factor = 1;
-				ctxID = pluginName + "SizeTest";
-				foundMax = false;
-				fontSize = 0;
-				jump = 0.1;
-				maxWidth = 0;
-				maxWord = 0;
-				counter = 0;
-				width = 0;
-				dimension = Math.min( this.size.width, this.size.height );
-				fctx = this.createCanvas( {
-					"id" : ctxID,
-					"width" : dimension,
-					"height" : dimension,
-					"left" : 0,
-					"top" : 0
-				} );
-				// Find the widest word at normal resolution.
-				for ( i = 0; i < this.words.length; i++ ) {
-					fctx.font = this.settings.weightFactor( this.words[ i ][ 1 ] ) + "px " + this.settings.font;
-					width = fctx.measureText( this.words[ i ][ 0 ] ).width;
-					if ( width > maxWidth ) {
-						maxWidth = width;
-						maxWord = this.words[ i ];
+				
+				while(lastTimeFactor != this.settings.size.factor){
+					ctxID = pluginName + "SizeTest";
+					foundMax = false;
+					fontSize = 0;
+					jump = 1.1;
+					maxWidth = 0;
+					maxWord = 0;
+					counter = 0;
+					width = 0;
+					
+					dimension = Math.min( this.size.width, this.size.height );
+					fctx = this.createCanvas( {
+						"id" : ctxID,
+						"width" : dimension,
+						"height" : dimension,
+						"left" : 0,
+						"top" : 0
+					} );
+
+					
+					lastTimeFactor = this.settings.size.factor;
+
+					// Find the widest word at normal resolution.
+					for ( i = 0; i < this.words.length; i++ ) {
+						fctx.font = (this.settings.size.factor * this.words[ i ][ 1 ]) + "px " + this.settings.font;
+						width = fctx.measureText( this.words[ i ][ 0 ] ).width;
+						if ( width > maxWidth ) {
+							maxWidth = width;
+							maxWord = this.words[ i ];
+						}
 					}
+					
+					// Keep increasing the font size until we find the largest that will fit in the smallest dimension of the container.
+					while ( !foundMax ) {
+						fontSize = this.settings.size.factor * maxWord[ 1 ];
+						fctx.font = fontSize.toString( 10 ) + "px " + this.settings.font;
+						width = fctx.measureText( maxWord[ 0 ] ).width;
+						if ( width > ( dimension * 0.95 ) ) {
+							this.settings.size.factor = this.settings.size.factor / jump;
+						} else if ( width < ( dimension * 0.9 ) ) {
+							this.settings.size.factor = this.settings.size.factor * jump;
+						} else {
+							foundMax = true;
+						}
+						counter++;
+						if ( counter > 10000 ) {
+							// Dude, if it takes this many tries to max out the font, set it yourself :)
+							foundMax = true;
+						}
+					}
+					this.destroyCanvas( ctxID );
 				}
-				// Keep increasing the font size until we find the largest that will fit in the smallest dimension of the container.
-				while ( !foundMax ) {
-					fontSize = this.settings.weightFactor( maxWord[ 1 ] );
-					fctx.font = fontSize.toString( 10 ) + "px " + this.settings.font;
-					width = fctx.measureText( maxWord[ 0 ] ).width;
-					if ( width > ( dimension * 0.95 ) ) {
-						this.settings.size.factor -= jump;
-					} else if ( width < ( dimension * 0.9 ) ) {
-						this.settings.size.factor += jump;
-					} else {
-						foundMax = true;
-					}
-					counter++;
-					if ( counter > 10000 ) {
-						// Dude, if it takes this many tries to max out the font, set it yourself :)
-						foundMax = true;
-					}
-				}
-				this.destroyCanvas( ctxID );
-				this.settings.size.factor -= jump;
+				//this.settings.size.factor -= jump;
 			}
 
 			// Figure out the color stepping if options.color is "gradient".
