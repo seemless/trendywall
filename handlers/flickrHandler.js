@@ -27,20 +27,15 @@ var FlickrHandler = function () {
 
           if(err) console.error("ERROR: Flickr API Error -> " + err);
           else {
-            
             var imgTagBeg = "<img src='";
             var imgTagEndOne = "' class='active' style='display: none;'/>";
             var imgTagEngOther = "' />";
-            var i = 0;
-            if(reply.photos.total < 100) {
-              i = reply.photos.total;
-            } else {
-              i = 100;
-            }
+            var i = Math.min(reply.photos.length, 100);
+
             for(var k = 0; k < i; k++) {
               //http://farm{farm-id}.staticflickr.com/{server-id}/{id}_{secret}.jpg
               var p = reply.photos.photo[k];
-              var title = p.title;
+              console.log(p);
               var src = "http://farm" + p.farm + ".staticflickr.com/" + p.server + "/" + p.id + "_" + p.secret + ".jpg";
               if(k == 1) {
                 outHTML += imgTagBeg + src + imgTagEndOne;

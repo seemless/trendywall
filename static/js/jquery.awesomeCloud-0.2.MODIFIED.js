@@ -305,12 +305,16 @@ Extra Thanks:
 			if ( this.settings.size.factor === parseInt( 0, 10 ) ) {
 				var lastTimeFactor = null;
 				this.settings.size.factor = 1;
-				
+				var iterations = 0;
+
 				while(lastTimeFactor != this.settings.size.factor){
+					
+					if(iterations++ > 100) break;
+
 					ctxID = pluginName + "SizeTest";
 					foundMax = false;
 					fontSize = 0;
-					jump = 1.1;
+					jump = 1.01;
 					maxWidth = 0;
 					maxWord = 0;
 					counter = 0;
@@ -356,8 +360,8 @@ Extra Thanks:
 							foundMax = true;
 						}
 					}
-					this.destroyCanvas( ctxID );
 				}
+				//this.destroyCanvas( ctxID );
 				//this.settings.size.factor -= jump;
 			}
 

@@ -43,35 +43,46 @@ var dbHandler = function(dbName) {
             // Some filtering
             var filteredText = textToStore
                 .replace(/&(\w+);/ig, ' ')  // Remove HTML entities (like &amp;, $nbsp;, etc...)
-                .replace(/[\/\(\):_%]/, ' ') // Remove Slashes & Parenthesis & Colons & Underscores & Percents
+                .replace(/[\/\(\):_%\.]/, ' ') // Remove Slashes & Parenthesis & Colons & Underscores & Percents
                 .replace(/"/ig, ' ')
                 .replace(new RegExp(inWord, 'ig'), ' ') // Remove the keyword
                 .replace(/\s\w\s/, ' ') // Remove single characters
-                .replace(/\s(\W+)\s/ig, ' ');
+                .replace(/\s(\W+)\s/ig, ' ')
+
+                // Blacklist
+                .replace(/\sis\s/ig, ' ')
+                .replace(/\sto\s/ig, ' ')
+                .replace(/\srt\s/ig, ' ')
+                .replace(/\sof\s/ig, ' ')
+                .replace(/\slol\s/ig, ' ')
+                .replace(/\sif\s/ig, ' ')
+                .replace(/\si'm\s/ig, ' ')
+                .replace(/\sthe\s/ig, ' ');
 
             // Calculate word frequency
-            var wordsArray = glossary.extract(filteredText);
-            // var wordsObj = {};
-            // for(var i = 0; i < textArray.length; i++){
-            //     if(textArray[i] === inWord) continue;
+            //var wordsArray = glossary.extract(filteredText);
+            var textArray = filteredText.split(" ");
+            var wordsObj = {};
+            for(var i = 0; i < textArray.length; i++){
+                if(textArray[i] === inWord || textArray[i] === "") continue;
                 
-            //     // If the word exists in the dictionary, increment it's value, otherwise create it with value 1.
-            //     wordsObj[textArray[i]] ? wordsObj[textArray[i]] += 1 : wordsObj[textArray[i]] = 1;
-            // }
-
-            // Store Words in DB
-            // var wordsObjKeys = Object.keys(wordsObj);
-            // for(var i = 0; i < wordsObjKeys.length; i++) {
-            //     var doc = obj.wordbank.id(wordsObjKeys[i]);
-            //     if(doc) { doc.count += wordsObj[wordsObjKeys[i]]; } 
-            //     else { obj.wordbank.push({ _id: wordsObjKeys[i], count: wordsObj[wordsObjKeys[i]]}); }
-            // }
-            
-            for(var i = 0; i < wordsArray.length; i++) {
-                var doc = obj.wordbank.id(wordsArray[i].word);
-                if(doc) { doc.count += wordsArray[i].count; } 
-                else { obj.wordbank.push({ _id: wordsArray[i].word, count: wordsArray[i].count }); }
+                // If the word exists in the dictionary, increment it's value, otherwise create it with value 1.
+                wordsObj[textArray[i]] ? wordsObj[textArray[i]] += 1 : wordsObj[textArray[i]] = 1;
             }
+
+            //Store Words in DB
+            var wordsObjKeys = Object.keys(wordsObj);
+            for(var i = 0; i < wordsObjKeys.length; i++) {
+                var doc = obj.wordbank.id(wordsObjKeys[i]);
+                if(doc) { doc.count += wordsObj[wordsObjKeys[i]]; } 
+                else { obj.wordbank.push({ _id: wordsObjKeys[i], count: wordsObj[wordsObjKeys[i]]}); }
+            }
+            
+            // for(var i = 0; i < wordsArray.length; i++) {
+            //     var doc = obj.wordbank.id(wordsArray[i].word);
+            //     if(doc) { doc.count += wordsArray[i].count; } 
+            //     else { obj.wordbank.push({ _id: wordsArray[i].word, count: wordsArray[i].count }); }
+            // }
 
             obj.save();
 
