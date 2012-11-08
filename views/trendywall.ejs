@@ -146,13 +146,88 @@ var doWordcloud = function(){
   });
 }
 
+var tweetOnMap = function() {
+  try {
+    $.getJSON('/getGeoTweet', function (t) {
+      if(!t) {
+        console.log("INFO: Didn't Get GeoTweet Response.");
+        return;
+      }
+
+      // Create div
+      var d = $('<div style="max-width: 500px; margin: 10px;"><table><tr><td><img class="tweet-pic" src="' + t.user.profile_image_url + '"/></td>' + '<td><span style="font-size:large;"><b>' + t.user.name + '</b>:' + t.text + '</span></td></tr>' + '<tr><td colspan="2"><span style="font-size:small;">Posted from ' + t.address + '</span></td></tr><tr><td colspan="2">' + t.created_at + '</td></tr>' + '</table></div>');
+
+      // Extract Lat/Long for convenience.
+      var lat = t.coordinates.coordinates[1];
+      var lng = t.coordinates.coordinates[0];
+
+      // Put tweet on map.
+      geNewPoint(geWidget, {
+        balloonDiv: d[0],
+        flyTo: true,
+        lat: lat,
+        lng: lng
+      });
+    });
+  } catch(e) {
+    console.log(e);
+  }
+}
+
+var sendKeywords = function(){
+    $.getJSON('/getActiveKeywords', function(wordsFromServer){
+        var toActivate = [];
+        var toActivateString = '';
+        var toDeactivate = [];
+        var toDeactivateString = '';
+
+        console.log("KE: ", g_keywords);
+        for(var i = 0; i < g_keywords.length; i++){
+          if($.inArray(g_keywords[i], wordsFromServer) == -1){
+            toActivate.push(g_keywords[i]);
+          }
+        }
+
+        for(var i = 0; i < wordsFromServer.length; i++){
+          if($.inArray(wordsFromServer[i], g_keywords) == -1){
+            toDeactivate.push(wordsFromServer[i]);
+          }
+        }
+
+        toActivateString = toActivate.join();
+        toDeactivateString = toDeactivate.join();
+        console.log("ToAct: ", toActivateString);
+        console.log("ToDeAct: ", toDeactivateString);
+
+        $.get("/activateKeywords?keywords=" + escape(toActivateString));
+        $.get("/deactivateKeywords?keywords=" + escape(toDeactivateString));
+      });
+  }
+
 //Everything in this functions runs immediately on load
 $(function () {
+  // Close Twitter Stream from Server
+  // ! Do we need this? Does it happen automagically on page unload?
+  $(window).unload(function () {
+    g_twitterStreamSource.close();
+  });
+
+  setInterval(tweetOnMap, 30000);
+  $(E).on('newKeywords', sendKeywords);
+
+  setTimeout(getGoogleNews, 30 * 6000);
+
   // Update WordCloud every 90 sec
   setInterval(doWordcloud, 90 * 1000);
-  doWordcloud();
+  doWordcloud(); // Also generate at page load
 
   $("#changeSearchTermsButton").height(($("#level1top").height() - 20));
+  $("#changeSearchTermsButton").button().click(function (event) {
+    event.preventDefault();
+    $("#map3d").hide();
+    $("#wordcloud").hide();
+    $("#dialog-form").dialog("open");
+  });
 
   // Reload page every 10 minutes.
   setTimeout(function(){
@@ -188,36 +263,8 @@ $(function () {
     }
   });
 
-  function sendKeywords(){
-    $.getJSON('/getActiveKeywords', function(wordsFromServer){
-        var toActivate = [];
-        var toActivateString = '';
-        var toDeactivate = [];
-        var toDeactivateString = '';
-
-        console.log("KE: ", g_keywords);
-        for(var i = 0; i < g_keywords.length; i++){
-          if($.inArray(g_keywords[i], wordsFromServer) == -1){
-            toActivate.push(g_keywords[i]);
-          }
-        }
-
-        for(var i = 0; i < wordsFromServer.length; i++){
-          if($.inArray(wordsFromServer[i], g_keywords) == -1){
-            toDeactivate.push(wordsFromServer[i]);
-          }
-        }
-
-        toActivateString = toActivate.join();
-        toDeactivateString = toDeactivate.join();
-        console.log("ToAct: ", toActivateString);
-        console.log("ToDeAct: ", toDeactivateString);
-
-        $.get("/activateKeywords?keywords=" + escape(toActivateString));
-        $.get("/deactivateKeywords?keywords=" + escape(toDeactivateString));
-      });
-  }
-  $(E).on('newKeywords', sendKeywords);
+  
+  
 
 
   // Get the server's current active keywords.
@@ -227,91 +274,7 @@ $(function () {
       $(E).trigger('newKeywords');
     }
   });
-
-
-  $("#changeSearchTermsButton").button().click(function (event) {
-    event.preventDefault();
-    $("#map3d").hide();
-    $("#wordcloud").hide();
-    $("#dialog-form").dialog("open");
-  });
-
-  loadPage();
-
 });
-
-
-function tweetOnMap() {
-  try {
-    $.getJSON('/getGeoTweet', function (t) {
-      if(!t) {
-        console.log("INFO: Didn't Get GeoTweet Response.");
-        return;
-      }
-
-      // Create div
-      var d = $('<div style="max-width: 500px; margin: 10px;"><table><tr><td><img class="tweet-pic" src="' + t.user.profile_image_url + '"/></td>' + '<td><span style="font-size:large;"><b>' + t.user.name + '</b>:' + t.text + '</span></td></tr>' + '<tr><td colspan="2"><span style="font-size:small;">Posted from ' + t.address + '</span></td></tr><tr><td colspan="2">' + t.created_at + '</td></tr>' + '</table></div>');
-
-      // Extract Lat/Long for convenience.
-      var lat = t.coordinates.coordinates[1];
-      var lng = t.coordinates.coordinates[0];
-
-      // Put tweet on map.
-      geNewPoint(geWidget, {
-        balloonDiv: d[0],
-        flyTo: true,
-        lat: lat,
-        lng: lng
-      });
-    });
-  } catch(e) {
-    console.log(e);
-  }
-}
-
-
-function loadPage() {
-  // Tell the server to close on Window Unload...
-  $(window).unload(function () {
-    g_twitterStreamSource.close();
-  });
-
-  //pull in new google earth tweet every 30 seconds (without authenticating we can only do about 1 request every 24 seconds)
-  setInterval(function () {
-    tweetOnMap();
-  }, 30000);
-
-  doWordcloud();
-
-  setTimeout(getGoogleNews, 30 * 6000);
-
-    //function () {
-    
-    
-    // $("#storeNews").load("./googleTopWorldNews", function () {});
-    // $("#googleNews").fadeOut();
-    // $("#googleNews").html('');
-    // $("#s_INTERESTING").clone().appendTo($("#googleNews"));
-    // $("#s_POPULAR").clone().appendTo($("#googleNews"));
-    // $("#googleNews").fadeIn();
-  //}, 4000);
-
-  //refresh google news every 1 hour
-  setInterval(function () {
-    $("#storeNews").load("http://news.google.com/news/section?pz=1&cf=all&ned=us&topic=w&output=html", function () {
-
-    });
-    $("#googleNews").fadeOut();
-    $("#googleNews").html('');
-    $("#s_INTERESTING").clone().appendTo($("#googleNews"));
-    $("#s_POPULAR").clone().appendTo($("#googleNews"));
-    $("#googleNews").fadeIn();
-
-  }, 600000);
-}
-
-
-
   </script>
 </head>
 <body style="background-color: black;">
