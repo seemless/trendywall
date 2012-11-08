@@ -108,7 +108,7 @@ var dbHandler = function(dbName) {
     };
 
     this.keywordSchema.statics.deactivateKeywords = function(keywords, cb) {
-        for(var i in keywords) {
+        for(var i = 0; i < keywords.length; i++) {
             console.log("INFO: Deactivating Keyword '" + keywords[i] + "' in Database.");
             this.update(
                 {keyword: keywords[i]},

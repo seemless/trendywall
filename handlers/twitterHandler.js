@@ -120,7 +120,7 @@ var TwitterHandler = function(dbModel) {
                 currentKeywordsString = keywordsString;
                 wordStoreArray = [];
                 var tempArray = keywordsString.split(',');
-                for(var i in tempArray) wordStoreArray.push({word: tempArray[i], textArray: ''});
+                for(var i = 0; i < tempArray.length; i++) wordStoreArray.push({word: tempArray[i], textArray: ''});
 
                 // Close the old connection.
                 if(twitterStream) twitterStream.destroy();
@@ -147,9 +147,9 @@ var TwitterHandler = function(dbModel) {
                             var tweetWordsArray = tweetToWordsArray(t.text);
 
                             // Find the keywords this was for.
-                            for(var i in wordStoreArray){
+                            for(var i = 0; i < wordStoreArray.length; i++){
                                 // If the keyword is in this tweet, store the tweet in this keyword's bank.
-                                for(var j in tweetWordsArray) {
+                                for(var j = 0; j < tweetWordsArray.length; j++) {
                                     if(tweetWordsArray[j] == wordStoreArray[i].word) {
                                         wordStoreArray[i].text += ' ' + t.text.toLowerCase();
                                         break;
@@ -181,7 +181,7 @@ var TwitterHandler = function(dbModel) {
             .sort({keyword: 1})
             .exec(function(err, results) {
                 var newKeywords = [];
-                for(var i in results) newKeywords.push(results[i].keyword);
+                for(var i = 0; i < results.length; i++) newKeywords.push(results[i].keyword);
                 localEmitter.emit('keywordsStringUpdated', newKeywords.join());
             });
     };

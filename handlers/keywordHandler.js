@@ -15,7 +15,7 @@ function KeywordBank(){
 
     // Search through keywords to see if the new
     // word already exists. If so, activate it.
-    for(var i in this.keywords){
+    for(var i = 0; i < this.keywords.length; i++){
       if(this.keywords[i].word === inWord){
         kw = this.keywords[i];
         kw.isActive = true;
@@ -34,12 +34,12 @@ function KeywordBank(){
   // Search through keywords to see if the word
   // exists. If so, de-activate it.
   this.removeKeyword = function(inWord){
-    for(var )
+    for(var i = 0;;)
   }
 
   this.getKeywordsAsArray = function(getInactiveKeywords){
     var out = [];
-    for(var i in this.keywords){
+    for(var i = 0; i < this.keywords.length; i++){
       if(this.keywords[i].isActive || getInactiveKeywords){
         out.push(this.keywords[i].word);
       }
@@ -49,7 +49,7 @@ function KeywordBank(){
 
   this.getKeywordsAsString = function(getInactiveKeywords){
     var out = "";
-    for(var i in this.keywords){
+    for(var i = 0; i < this.keywords.length; i++){
       if(this.keywords[i].isActive || getInactiveKeywords){
         out += this.keywords[i].word + ', ';
       }
