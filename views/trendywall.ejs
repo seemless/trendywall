@@ -114,23 +114,24 @@ $(g_event).on('newKeywords', getGoogleNews);
 var doWordcloud = function(){
     $.getJSON("/getWordCloudWords/", function(data, text, obj){
       if(data){
-        var wordCloudSettings = {
-  size: { normalize: true },
-  shape: "circle",
-  font: "Helvetica, Arial, Sans",
-  options: {
-    color: "random-light",
-    rotationRatio: 0,
-    sort: "highest"
-  }
-};
-
         var el = $("#wordcloud");
+        
         el.html('');
+        
         for(var i = 0; i < data.length; i++){
           el.append("<span data-weight='" + data[i].count + "' style='display: none;'>" + data[i].word + "</span>");
         }
-        el.awesomeCloud(wordCloudSettings);
+        
+        el.awesomeCloud({
+          size: { normalize: true },
+          shape: "circle",
+          font: "Helvetica, Arial, Sans",
+          options: {
+            color: "random-light",
+            rotationRatio: 0,
+            sort: "highest"
+          }
+        });
     }
   });
 }
@@ -215,7 +216,7 @@ $(function () {
     event.preventDefault();
     $("#map3d").hide();
     $("#wordcloud").hide();
-    $("#dialog-form").dialog("open");
+    $("#dialog-form-div").dialog("open");
   });
 
   // Reload page every 10 minutes.
@@ -225,7 +226,7 @@ $(function () {
 
   google.load('search', '1', {callback: getGoogleNews});
   
-  $("#dialog-form").dialog({
+  $("#dialog-form-div").dialog({
     autoOpen: false,
     show: "fade",
     hide: "fade",
@@ -233,17 +234,16 @@ $(function () {
     width: 500,
     modal: true,
     buttons: {
-      "Submit": function () {
-        var terms = $("#searchTerms").val();
-        terms = terms.replace(/,\s/g, ','); // Remove spaces after a comma.
-        $(this).dialog("close");
-
-        g_keywords = terms.split(",");
-        g_keywords.sort();
-        console.log(g_keywords);
-      },
+      "Submit": function(){ $(this).dialog("close"); }
     },
     close: function () {
+      console.log("Called");
+      var terms = $("#searchTerms").val();
+      terms = terms.replace(/,\s/g, ','); // Remove spaces after a comma.
+
+      g_keywords = terms.split(",");
+      g_keywords.sort();
+
       $("#map3d").show();
       $("#wordcloud").show();
 
@@ -251,7 +251,10 @@ $(function () {
       $(g_event).trigger('newKeywords');
     }
   });
-
+  $("#dialog-form").submit(function(e){
+    e.preventDefault();
+    $("#dialog-form-div").dialog("close");
+  });
   
   
 
@@ -308,9 +311,9 @@ $(function () {
     <div id="googleTrends"></div>
   </div>
   <div id="mapTweet" style="visibility:hidden;"></div>
-  <div id="dialog-form" title="Areas of Interest">
+  <div id="dialog-form-div" title="Areas of Interest">
     <p class="validateTips">Use commas between multiple interests</p>
-    <form>
+    <form id="dialog-form">
       <fieldset>
         <label for="keywords">Enter Interest(s):</label>
         <input type="text" name="searchTerms" id="searchTerms" style="width: 100%;" class="text ui-widget-content ui-corner-all" />
