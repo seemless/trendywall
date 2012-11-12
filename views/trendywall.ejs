@@ -12,39 +12,18 @@
   <script type="text/javascript" src="/static/js/jquery.awesomeCloud-0.2.MODIFIED.js"></script>
   <script type="text/javascript" src="/static/js/layout.js"></script>
   <script>
-var E = {}; // Empty element to handle our custom events.
+
+var g_event = {}; // Empty element to handle our custom events.
 var g_keywords = [];
 var g_twitterStreamSource = null;
-
-var wordCloudSettings = {
-  size: { normalize: true },
-  shape: "circle",
-  font: "Helvetica, Arial, Sans",
-  options: {
-    color: "random-light",
-    rotationRatio: 0,
-    sort: "highest"
-  }
-};
-
-function getKeywordsString(inArray) {
-  if(!inArray) inArray = g_keywords;
-
-  var keywordsString = "";
-  for(var i = 0; i < g_keywords.length; i++) keywordsString += g_keywords[i] + ',';
-  keywordsString = keywordsString.slice(0, keywordsString.length - 1);    // Remove Trailing Comma
-
-  return keywordsString;
-}
 
 function startTwitterStream() {
   // Close the connection if it exists.
   if(g_twitterStreamSource) g_twitterStreamSource.close();
   
-  var url = '/twitterStream?keywords=' + escape(getKeywordsString());
+  var url = '/twitterStream?keywords=' + escape(g_keywords.join());
   var source = g_twitterStreamSource = new EventSource(url);
   source.addEventListener('message', function (e) {
-
     var tweet = $.parseJSON(e.data);
 
     // Note "<" + "/xx>"" tags seperated to comply with HTML W3 specs.
@@ -55,14 +34,16 @@ function startTwitterStream() {
                   "<span>" + tweet.text + "<" + "/span>"+
                 "<" + "/div>"+
               "<" + "/div>";
-
     $("#tweets").prepend(div);
     $(".newtweet").show("slide", {
       direction: "up"
     }, 1000).removeClass("newtweet");
+
+    // Remove excess tweeets
+    $("#tweets").children().slice(15).remove();
   }, false);
 }
-$(E).on('newKeywords', startTwitterStream);
+$(g_event).on('newKeywords', startTwitterStream);
 
 // Display Keywords on notice that there's new ones.
 function displayKeywords(){
@@ -71,17 +52,14 @@ function displayKeywords(){
     html += "<span class='search-term' style='height: " + ($("#level1top").height() - 20) + "px;'>" + g_keywords[i] + "<" + "/span>";
   }
   $("#keywordsSpans").html(html);
-  $("#searchTerms").val(getKeywordsString());
+  $("#searchTerms").val(g_keywords.join());
 }
-$(E).on('newKeywords', displayKeywords);
+$(g_event).on('newKeywords', displayKeywords);
 
 
 function startFlickrStream(){
   $("#slideshow").html('');
-  //flickrTerms can be a comma separated list
-  flickrTerms = getKeywordsString();
-  flickrTagMode = "any";
-  flickrUrl = "./flickr?keywords=" + escape(flickrTerms) + "&tagMode=" + flickrTagMode;
+  flickrUrl = "./flickr?keywords=" + escape(g_keywords.join()) + "&tagMode=any";
   $("#slideshow").load(flickrUrl);
 
   // *************SLIDESHOWS**********************
@@ -110,7 +88,7 @@ function startFlickrStream(){
     // $next.show();
   }, 10000);
 }
-$(E).on('newKeywords', startFlickrStream);
+$(g_event).on('newKeywords', startFlickrStream);
 
 
 var getGoogleNews = function(){
@@ -131,11 +109,22 @@ var getGoogleNews = function(){
     googleNewsSearch.setResultSetSize(8);
     googleNewsSearch.execute(g_keywords);
 }
-$(E).on('newKeywords', getGoogleNews);
+$(g_event).on('newKeywords', getGoogleNews);
 
 var doWordcloud = function(){
     $.getJSON("/getWordCloudWords/", function(data, text, obj){
       if(data){
+        var wordCloudSettings = {
+  size: { normalize: true },
+  shape: "circle",
+  font: "Helvetica, Arial, Sans",
+  options: {
+    color: "random-light",
+    rotationRatio: 0,
+    sort: "highest"
+  }
+};
+
         var el = $("#wordcloud");
         el.html('');
         for(var i = 0; i < data.length; i++){
@@ -213,7 +202,7 @@ $(function () {
   });
 
   setInterval(tweetOnMap, 30000);
-  $(E).on('newKeywords', sendKeywords);
+  $(g_event).on('newKeywords', sendKeywords);
 
   setTimeout(getGoogleNews, 30 * 6000);
 
@@ -259,7 +248,7 @@ $(function () {
       $("#wordcloud").show();
 
       // Notifty Listeners
-      $(E).trigger('newKeywords');
+      $(g_event).trigger('newKeywords');
     }
   });
 
@@ -271,7 +260,7 @@ $(function () {
   $.getJSON('/getActiveKeywords', function(data){
     if(g_keywords != data){
       g_keywords = data;
-      $(E).trigger('newKeywords');
+      $(g_event).trigger('newKeywords');
     }
   });
 });

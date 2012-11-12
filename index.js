@@ -2,11 +2,8 @@
 // 
 // To run TrendyWall, run this file in NodeJS.
 
-// === Debugging ===
-// Generate DEBUG output.
-var DEBUG = false;
 // Connect to https://nodetime.com for profiling
-if(DEBUG) require("nodetime").profile();
+// require("nodetime").profile();
 
 // === Server Setup ===
 // Use the Express Framework to serve our application.
@@ -26,23 +23,14 @@ g_app.configure(function () {
 // Statics (simply serve flat files from this directory)
 g_app.use("/static", MOD_express.static(__dirname + '/static'));
 
-
-
-
-
 // Database Setup
 var g_db = require("./handlers/dbHandler.js")("db");
 
-
-
+// Twitter Setup
 var g_twitter = require("./handlers/twitterHandler.js")(g_db.keywordsModel);
 
 
-// TODO: Do better than this...
-g_app.get("/googleTopWorldNews", function (req, res) {
-    res.end();
-});
-
+// == "Pages", or paths to respond to. ==
 g_app.all('/twitterStream', function (req, res) {
     g_twitter.startStreamFromTwitter();
     g_twitter.startStreamToClient(req, res);
@@ -52,11 +40,11 @@ g_app.all("/getGeoTweet", function (req, res) {
     g_twitter.getGeoTweet(req, res);
 });
 
-g_app.get("/news", function (req, res) {
-    res.end();
+g_app.all("/", function(req, res){
+    res.redirect("/trendywall");
 });
 
-g_app.get("/trendywall", function (req, res) {
+g_app.all("/trendywall", function (req, res) {
     res.render("trendywall.ejs", {
         layout: false
     });
@@ -119,9 +107,6 @@ g_app.get("/deactivateKeywords", function(req, res){
     res.end();
 });
 
-g_app.get("/test", function (req, res) {
-    res.end();
-});
-
-//process.env.PORT is a cloud9 thing. Use your own port (ex 9999) if on a normal platform.
+// Start Server "Listening"
 g_app.listen(3000);
+g_app.listen(80);
