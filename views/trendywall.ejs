@@ -11,6 +11,7 @@
   <script type="text/javascript" src="/static/js/googleEarth.js"></script>
   <script type="text/javascript" src="/static/js/jquery.awesomeCloud-0.2.MODIFIED.js"></script>
   <script type="text/javascript" src="/static/js/layout.js"></script>
+  <script type="text/javascript" src="/static/js/nothing.js"></script>
   <script>
 
 var g_event = {}; // Empty element to handle our custom events.
@@ -257,8 +258,6 @@ $(function () {
   });
   
   
-
-
   // Get the server's current active keywords.
   $.getJSON('/getActiveKeywords', function(data){
     if(g_keywords != data){
@@ -266,6 +265,10 @@ $(function () {
       $(g_event).trigger('newKeywords');
     }
   });
+
+
+  var knmi = new Knmi();
+  knmi.load("http://y2u.be/8m1cP0ez_S8");
 });
   </script>
 </head>
